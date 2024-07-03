@@ -17,13 +17,25 @@ struct ZoomModifier: ViewModifier {
         content
             .gesture(
                 MagnificationGesture()
+//                    .onChanged { val in
+//                        let delta = val / gestureScale
+//                        gestureScale *= delta
+//                        print("gestureScale: \(gestureScale)")
+//                    }
+//                    .onEnded { _ in
+//                        currentScale = max(minZoom, min(maxZoom, gestureScale * currentScale))
+//                        gestureScale = 1.0
+//                        print("currentScale: \(currentScale)")
+//                    }
                     .onChanged { val in
                         let delta = val / gestureScale
                         gestureScale *= delta
+                        print("gestureScale: \(gestureScale)")
                     }
                     .onEnded { _ in
                         currentScale = max(minZoom, min(maxZoom, gestureScale * currentScale))
                         gestureScale = 1.0
+                        print("currentScale: \(currentScale)")
                     }
             )
     }

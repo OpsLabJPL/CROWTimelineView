@@ -7,10 +7,10 @@
 
 import Foundation
 
-enum TimeZones: String, CaseIterable {
+public enum TimeZones: String, CaseIterable {
     case utc = "UTC", ist = "IST", pdt = "PDT", local = "Local"
 
-    var zone: TimeZone {
+    public var zone: TimeZone {
         switch self {
         case .utc:
             return TimeZone(abbreviation: "UTC")!
@@ -23,7 +23,7 @@ enum TimeZones: String, CaseIterable {
         }
     }
 
-    var flag: String? {
+    public var flag: String? {
         switch self {
         case .ist:
             return "🇮🇳"

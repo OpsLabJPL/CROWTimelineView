@@ -7,11 +7,11 @@
 
 import Foundation
 
-class Time: ObservableObject {
-    var simulationTimeDelta = 0.0
-    var targetSimulationTime = Date.now
-    var targetWallClockTime = Date.now
-    @Published var selectedTimeZone = TimeZones.utc {
+public class Time: ObservableObject {
+    public var simulationTimeDelta = 0.0
+    public var targetSimulationTime = Date.now
+    public var targetWallClockTime = Date.now
+    @Published public var selectedTimeZone = TimeZones.utc {
         didSet {
             utcDoyFormat.timeZone = selectedTimeZone.zone
             ravenDateFormatter.timeZone = selectedTimeZone.zone
@@ -23,13 +23,13 @@ class Time: ObservableObject {
         }
     }
 
-    let durationFormat: DateFormatter = {
+    public let durationFormat: DateFormatter = {
         let format = DateFormatter()
         format.dateFormat = "hh'h'mm'm'ss's'"
         return format
     }()
 
-    let utcDoyFormat: DateFormatter = {
+    public let utcDoyFormat: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = ""
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -38,7 +38,7 @@ class Time: ObservableObject {
         return formatter
     }()
 
-    let utcDoyFormatWithT: DateFormatter = {
+    public let utcDoyFormatWithT: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = ""
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -47,7 +47,7 @@ class Time: ObservableObject {
         return formatter
     }()
 
-    let ravenDateFormatter: DateFormatter = {
+    public let ravenDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-DDD'T'HH:mm:ss.SSS"
@@ -55,7 +55,7 @@ class Time: ObservableObject {
         return formatter
     }()
 
-    let ravenJsonDateFormatter: DateFormatter = {
+    public let ravenJsonDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-DDD'T'HH:mm:ss"
@@ -63,7 +63,7 @@ class Time: ObservableObject {
         return formatter
     }()
 
-    let utcYMDDateFormatter: DateFormatter = {
+    public let utcYMDDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
@@ -71,7 +71,7 @@ class Time: ObservableObject {
         return formatter
     }()
 
-    let utcYMDmsDateFormatter: DateFormatter = {
+    public let utcYMDmsDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
@@ -79,34 +79,34 @@ class Time: ObservableObject {
         return formatter
     }()
 
-    let dayFormatter: DateFormatter = {
+    public let dayFormatter: DateFormatter = {
         let format = DateFormatter()
         format.dateFormat = "EEE dd"
         format.timeZone = TimeZone(abbreviation: "UTC")
         return format
     }()
 
-    let dayMonth3Year2Formatter: DateFormatter = {
+    public let dayMonth3Year2Formatter: DateFormatter = {
         let format = DateFormatter()
         format.dateFormat = "EEE dd MMM yyyy"
         format.timeZone = TimeZone(abbreviation: "UTC")
         return format
     }()
 
-    let hourFormatter: DateFormatter = {
+    public let hourFormatter: DateFormatter = {
         let format = DateFormatter()
         format.dateFormat = "HH"
         format.timeZone = TimeZone(abbreviation: "UTC")
         return format
     }()
 
-    var calendar: Calendar = {
+    public var calendar: Calendar = {
         var calendar = Calendar.current
         calendar.timeZone = TimeZone(abbreviation: "UTC")!
         return calendar
     }()
 
-    func getRealTime(for date: Date) -> Date {
+    public func getRealTime(for date: Date) -> Date {
         return Calendar.current.date(
             byAdding: .second,
             value: -1 * targetDelta(),
@@ -114,7 +114,7 @@ class Time: ObservableObject {
         ) ?? Date.now
     }
 
-    func getSimulatedTime(for date: Date) -> Date {
+    public func getSimulatedTime(for date: Date) -> Date {
         return Calendar.current.date(
             byAdding: .second,
             value: targetDelta(),
@@ -122,12 +122,12 @@ class Time: ObservableObject {
         ) ?? Date.now
     }
 
-    func formatSimulatedTime(_ targetDate: Date) -> String {
+    public func formatSimulatedTime(_ targetDate: Date) -> String {
         let simulatedTime = getSimulatedTime(for: targetDate)
         return utcDoyFormat.string(from: simulatedTime) + " \(Time.shared.selectedTimeZone.rawValue)"
     }
 
-    func formatRealTime(for date: Date) -> String {
+    public func formatRealTime(for date: Date) -> String {
         return utcDoyFormat.string(from: date) + " \(Time.shared.selectedTimeZone.rawValue)"
     }
 
@@ -138,9 +138,9 @@ class Time: ObservableObject {
 //        simulationTimeDelta = targetSimulationTime.timeIntervalSince(targetWallClockTime)
 //    }
 
-    func targetDelta() -> Int { Int(simulationTimeDelta) }
+    public func targetDelta() -> Int { Int(simulationTimeDelta) }
 
-    static func eventDate(_ dateString: String) -> Date? {
+    public static func eventDate(_ dateString: String) -> Date? {
         if let doyDate = Time.shared.ravenJsonDateFormatter.date(from: dateString) {
             return doyDate
         }
@@ -153,7 +153,7 @@ class Time: ObservableObject {
         return nil
     }
 
-    static let shared = Time()
+    public static let shared = Time()
     private init() {
     }
 }

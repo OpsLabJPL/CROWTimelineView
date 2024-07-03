@@ -10,6 +10,7 @@ import SwiftUI
 struct DayAxisHeader: View {
     @EnvironmentObject var time: Time
     @ObservedObject var viewModel: TimelineViewModel
+    @Binding var scrollOffset: CGPoint
     let viewportWidth: Double
     let maxWidthDay = 50.0
 
@@ -30,10 +31,10 @@ struct DayAxisHeader: View {
                     let dayText = formatter.string(from: dayStart)
                     var leadingOffset = viewModel.convertDurationToWidth * (
                         dayStart.timeIntervalSince(viewModel.earliestTime)
-                    ) + viewModel.currentOffset
+                    ) + scrollOffset.x
                     let trailingOffset = viewModel.convertDurationToWidth * (
                         nextDayStart.timeIntervalSince(viewModel.earliestTime)
-                    ) + viewModel.currentOffset
+                    ) + scrollOffset.x
                     if !(trailingOffset < viewXMin || leadingOffset > viewXMax) {
                         var path = Path()
                         path.move(to: CGPoint(x: leadingOffset, y: 0))
@@ -63,8 +64,9 @@ struct DayAxisHeader: View {
         }
     }
 
-    init(_ viewModel: TimelineViewModel, viewportWidth: Double) {
+    init(_ viewModel: TimelineViewModel, scrollOffset: Binding<CGPoint>, viewportWidth: Double) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
+        _scrollOffset = Binding(projectedValue: scrollOffset)
         self.viewportWidth = viewportWidth
     }
 }

@@ -11,24 +11,28 @@ import Combine
 public class TimelineViewModel: ObservableObject {
     @Published public var timelines: [TimelineEvents] = []
     var timelinesChangeResponder: Cancellable?
-
-    // horizontal pan position of the timeline on screen
-    @Published public var currentOffset = 0.0
+    
     // horizontal width of the drawable timeline in points
     @Published public var timelineWidth = 0.0
+    
     // scale of time spans on screen
     @Published public var timeZoom = TimelineViewModel.defaultZoom
+    
     // points over hours
     @Published public var convertDurationToWidth = 1.0
+    
+    // earliest time in the event data
     @Published public var earliestTime: Date = .now
+
+    // latest time in the event data
     @Published public var latestTime: Date = .now.addingTimeInterval(86400)
+
     let twoWeeksInSeconds = 86400.0*14
     let tenMinutesInSeconds = 600.0
     public static let defaultZoom = 4.0
 
     public init(
         timelines: [TimelineEvents],
-        currentOffset: Double = 0.0,
         timelineWidth: Double = 0.0,
         timeZoom: Double = TimelineViewModel.defaultZoom,
         convertDurationToWidth: Double = 1.0,
@@ -36,7 +40,6 @@ public class TimelineViewModel: ObservableObject {
         latestTime: Date = .now.addingTimeInterval(86400)
     ) {
         self.timelines = timelines
-        self.currentOffset = currentOffset
         self.timelineWidth = timelineWidth
         self.timeZoom = timeZoom
         self.convertDurationToWidth = convertDurationToWidth
@@ -71,11 +74,13 @@ public class TimelineViewModel: ObservableObject {
     }
 
     public func minOffset(_ frameWidth: Double) -> Double {
-        return -timelineWidth + frameWidth * 0.5
+//        return -timelineWidth + frameWidth * 0.5
+        return -timelineWidth + frameWidth
     }
 
     public func maxOffset(_ frameWidth: Double) -> Double {
-        return frameWidth * 0.5
+//        return frameWidth * 0.5
+        return 0
     }
 
     public var timespan: TimeInterval {
@@ -85,7 +90,6 @@ public class TimelineViewModel: ObservableObject {
     public func recomputeWidth() {
         convertDurationToWidth = timeZoom / 3600.0
         timelineWidth = timespan * convertDurationToWidth
-        print("timeline width: \(timelineWidth)")
     }
 
     public func initialZoom(_ frameWidth: Double) -> Double {

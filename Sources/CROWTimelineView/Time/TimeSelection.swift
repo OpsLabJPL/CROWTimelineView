@@ -7,6 +7,10 @@
 
 import Foundation
 
-class TimeSelection: ObservableObject {
-    @Published var selectedTime: Date?
+public class TimeSelection: ObservableObject {
+    @Published public var selectedTime: Date?
+
+    public init(selectedTime: Date? = nil) {
+        self.selectedTime = selectedTime
+    }
 }

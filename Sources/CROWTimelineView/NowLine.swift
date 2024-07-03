@@ -9,6 +9,7 @@ import SwiftUI
 
 struct NowLine: View {
     @ObservedObject var viewModel: TimelineViewModel
+    @Binding var scrollOffset: CGPoint
     @Binding var simNow: Date
 
     var body: some View {
@@ -17,7 +18,7 @@ struct NowLine: View {
                 simNow.timeIntervalSinceReferenceDate -
                 viewModel.earliestTime.timeIntervalSinceReferenceDate
             )
-            let xform = CGAffineTransform(translationX: viewModel.currentOffset, y: 0.0)
+            let xform = CGAffineTransform(translationX: scrollOffset.x, y: 0.0)
                 .scaledBy(x: viewModel.convertDurationToWidth, y: 1.0)
             let origin = CGPoint(x: originX, y: 0)
             let viewLineOrigin = origin.applying(xform)

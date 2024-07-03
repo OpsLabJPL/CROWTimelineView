@@ -5,10 +5,10 @@ import SwiftUI
 
 public struct TimelineCanvas: View {
     @Binding public var timeline: TimelineEvents
+
+    // position of the ScrollView offset from the origin. X is horizontal, 0 is the left edge
     @Binding public var scrollOffset: CGPoint
     @Binding public var selectedEvent: TimelineEvent?
-    // horizontal pan position of the timeline on screen
-    @Binding var currentOffset: Double
     // points over hours
     @Binding var convertDurationToWidth: Double
     @State private var eventBarTimeRects: [EventTimeRect] = []
@@ -26,8 +26,11 @@ public struct TimelineCanvas: View {
                 height: 21.0 * rowsHeight() + 10.0
             )
             .onTapGesture(coordinateSpace: .local) { location in
-                for index in eventBarViewRects.indices where eventBarViewRects[index].rect.contains(location) {
+                let moveToOffset = CGAffineTransform(translationX: scrollOffset.x, y: 0)
+                let locationPlusOffset = location.applying(moveToOffset)
+                for index in eventBarViewRects.indices where eventBarViewRects[index].rect.contains(locationPlusOffset) {
                     let event = timeline.events[eventBarViewRects[index].eventIndex]
+                    print(event.name)
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedEvent = selectedEvent == event ? nil : event
                     }
@@ -40,11 +43,10 @@ public struct TimelineCanvas: View {
         .onChange(of: timeline.collapsed) { _ in
             updateEventViewRects()
         }
-//        .onChange(of: viewModel.timeZoom) { _ in
         .onChange(of: convertDurationToWidth){ _ in
             updateEventViewRects()
         }
-        .onChange(of: currentOffset) { _ in
+        .onChange(of: scrollOffset) { _ in
             updateEventViewRects()
         }
         .onChange(of: timeline) { _ in
@@ -63,11 +65,11 @@ public struct TimelineCanvas: View {
     }
 
     func drawEventBarsAndText(_ context: GraphicsContext) {
-        let viewXMin = 0.0 // + scrollOffset.x
+        let viewXMin = 0.0
         let viewXMax = viewXMin + viewportWidth
         if timeline.collapsed {
             for eventViewRect in eventBarViewRects {
-                if eventViewRect.rect.minX /* - scrollOffset.x */ > viewXMax || eventViewRect.rect.maxX /* - scrollOffset.x */ < viewXMin {
+                if eventViewRect.rect.minX > viewXMax || eventViewRect.rect.maxX < viewXMin {
                     continue
                 }
                 // draw event bar desaturated
@@ -209,7 +211,7 @@ public struct TimelineCanvas: View {
         let viewXMax = viewportWidth + viewXMin
         var viewRects: [EventViewRect] = []
         let selectedEventId = selectedEvent?.id
-        let xform = CGAffineTransform(translationX: currentOffset, y: 0.0)
+        let xform = CGAffineTransform(translationX: scrollOffset.x, y: 0.0)
             .scaledBy(x: convertDurationToWidth, y: 1.0)
         if timeline.collapsed {
             for (i, event) in timeline.events.enumerated() {
@@ -247,14 +249,12 @@ public struct TimelineCanvas: View {
         timeline: Binding<TimelineEvents>,
         scrollOffset: Binding<CGPoint>,
         selectedEvent: Binding<TimelineEvent?>,
-        currentOffset: Binding<Double>,
         convertDurationToWidth: Binding<Double>,
         viewportWidth: Double
     ) {
         _timeline = Binding(projectedValue: timeline)
         _scrollOffset = Binding(projectedValue: scrollOffset)
         _selectedEvent = Binding(projectedValue: selectedEvent)
-        _currentOffset = Binding(projectedValue: currentOffset)
         _convertDurationToWidth = Binding(projectedValue: convertDurationToWidth)
         self.viewportWidth = viewportWidth
     }
@@ -288,7 +288,6 @@ struct EventTimeRect {
                 timeline: .constant(TimelineEvents.previewEvents()),
                 scrollOffset: .constant(CGPoint(x: 0, y: 0)),
                 selectedEvent: .constant(nil),
-                currentOffset: .constant(0.0),
                 convertDurationToWidth: .constant(0.02),
                 viewportWidth: 320.0
             )
@@ -299,7 +298,6 @@ struct EventTimeRect {
                 timeline: .constant(TimelineEvents.morePreviewEvents()),
                 scrollOffset: .constant(CGPoint(x: 0, y: 0)),
                 selectedEvent: .constant(nil),
-                currentOffset: .constant(0.0),
                 convertDurationToWidth: .constant(0.02),
                 viewportWidth: 320.0
             )

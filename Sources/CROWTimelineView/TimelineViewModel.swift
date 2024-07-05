@@ -11,7 +11,9 @@ import Combine
 public class TimelineViewModel: ObservableObject {
     @Published public var timelines: [TimelineEvents] = []
     var timelinesChangeResponder: Cancellable?
-    
+
+    @Published public var viewportWidth = 0.0
+
     // horizontal width of the drawable timeline in points
     @Published public var timelineWidth = 0.0
     

@@ -11,10 +11,10 @@ public struct TimelineVStack: View {
     @EnvironmentObject var timeSelection: TimeSelection
     @ObservedObject var viewModel: TimelineViewModel
     @State private var simNow = Time.shared.getSimulatedTime(for: Date.now)
-    @State var currentScale: CGFloat = 4.0
+    @State private var scaleWhenMagnifyBegins: CGFloat?
+    @State var viewScale: CGFloat = 4.0
     @State var scrollOffset: CGPoint = .zero
     @State var gestureOffset = 0.0
-    @State var gestureScale: CGFloat = 1.0
     @State var selectedTime: Date?
     @State var selectedTimelineEvent: TimelineEvent?
     @State var showSelectedEvent = false
@@ -25,44 +25,50 @@ public struct TimelineVStack: View {
     @State var scrollTo: Int?
 
     public var body: some View {
-        NavigationStack {
-            GeometryReader { geom in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        // ribbon of day, hour labels at top for context
-                        headerRibbons(geom)
-                            .onTapGesture { location in
-                                let cursorOrigin = location.x - scrollOffset.x
-                                let timeOffset = cursorOrigin / viewModel.convertDurationToWidth
-                                selectedTime = viewModel.earliestTime.addingTimeInterval(timeOffset)
-                                timeSelection.selectedTime = selectedTime
-                            }
+        GeometryReader { geom in
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    // ribbon of day, hour labels at top for context
+                    headerRibbons(geom)
+                        .onTapGesture { location in
+                            let cursorOrigin = location.x - scrollOffset.x
+                            let timeOffset = cursorOrigin / viewModel.convertDurationToWidth
+                            selectedTime = viewModel.earliestTime.addingTimeInterval(timeOffset)
+                            timeSelection.selectedTime = selectedTime
+                        }
 
-                        timelineChartStack(geom)
-                    }
+                    timelineChartStack(geom)
+                }
 #if os(macOS)
-                    macSelectedEvent()
+                macSelectedEvent()
 #endif
-                }
-                .navigationTitle("offset: \(Int(scrollOffset.x)) w: \(Int(viewModel.timelineWidth))")
-                .modifier(
-                    ZoomModifier(
-                        $gestureScale,
-                        $currentScale,
-                        minZoom: viewModel.minZoom(geom.size.width),
-                        maxZoom: viewModel.maxZoom(geom.size.width)
-                    )
-                )
-                .onChange(of: gestureScale) { _ in
-                    updateZoom(frameWidth: geom.size.width)
-                }
-                .onChange(of: currentScale) { _ in
-                    updateZoom(frameWidth: geom.size.width)
-                }
-                .task {
-                    if viewModel.timeZoom == TimelineViewModel.defaultZoom {
-                        scaleToFitWidth(geom)
+            }
+            .navigationTitle("offset: \(Int(scrollOffset.x)) w: \(Int(viewModel.timelineWidth))")
+            .gesture(
+                MagnifyGesture()
+                    .onChanged { value in
+                        if let scaleWhenMagnifyBegins {
+                            viewScale = scaleWhenMagnifyBegins * value.magnification
+                        } else {
+                            scaleWhenMagnifyBegins = viewScale
+                            viewScale = viewScale * value.magnification
+                        }
+                        print("viewScale: \(viewScale), magnify: \(value.magnification)")
                     }
+                    .onEnded { value in
+                        Task {
+                            scaleWhenMagnifyBegins = nil
+                        }
+                    }
+            )
+            .onChange(of: viewScale) { _, _ in
+                updateZoom(frameWidth: geom.size.width)
+            }
+
+            .onChange(of: viewModel.setInitialZoom) { _, setInitialZoom in
+                if setInitialZoom {
+                    scaleToFitWidth(geom)
+                    viewModel.setInitialZoom = false
                 }
             }
         }
@@ -72,9 +78,6 @@ public struct TimelineVStack: View {
             selectedTimelineEvent: $selectedTimelineEvent
         ))
 #endif
-//        .task {
-//            navigateToDate = viewModel.earliestTime
-//        }
     }
 
     @ViewBuilder func headerRibbons(_ geom: GeometryProxy) -> some View {
@@ -143,7 +146,7 @@ public struct TimelineVStack: View {
                         }
                     }
                 }
-                .onChange(of: scrollTo) { newScrollTo in
+                .onChange(of: scrollTo) { _, newScrollTo in
                     if let offset = newScrollTo {
                         value.scrollTo(offset, anchor: UnitPoint(x: 0.0, y: 0.0))
                     } else {
@@ -161,10 +164,10 @@ public struct TimelineVStack: View {
                 .frame(maxHeight: .infinity)
         }
         .clipped()
-        .onChange(of: selectedTimelineEvent) { event in
+        .onChange(of: selectedTimelineEvent) { _, event in
             showSelectedEvent = event != nil
         }
-        .onChange(of: showSelectedEvent) { show in
+        .onChange(of: showSelectedEvent) { _, show in
             if !show {
                 selectedTimelineEvent = nil
             }
@@ -201,14 +204,20 @@ public struct TimelineVStack: View {
     func scaleToFitWidth(_ geom: GeometryProxy) {
         let initialZoom = viewModel.initialZoom(geom.size.width)
         viewModel.setTimelineZoom(initialZoom)
-        currentScale = initialZoom
+        viewScale = initialZoom
     }
 
-    func updateZoom(frameWidth: CGFloat) {
-        let prevTimeOffset = (scrollOffset.x - frameWidth * 0.5) / viewModel.convertDurationToWidth
-        let scale = gestureScale * currentScale
+    @MainActor func updateZoom(frameWidth: CGFloat) {
+        print("startOffset \(scrollOffset.x)")
+        let prevOffset = (scrollOffset.x - frameWidth * 0.5)
+        let prevTimeOffset = prevOffset / viewModel.convertDurationToWidth
+
+//        let scale = gestureScale + viewScale
+        let scale = viewScale
+
         viewModel.setTimelineZoom(min(viewModel.maxZoom(frameWidth), max(viewModel.minZoom(frameWidth), scale)))
         var newOffset = prevTimeOffset * viewModel.convertDurationToWidth + frameWidth * 0.5
+        print("newOffset: \(newOffset)")
         let minOffset = viewModel.minOffset(frameWidth)
         let maxOffset = viewModel.maxOffset(frameWidth)
         newOffset = max(minOffset, min(maxOffset, newOffset))

@@ -12,14 +12,15 @@ public class TimelineViewModel: ObservableObject {
     @Published public var timelines: [TimelineEvents] = []
     var timelinesChangeResponder: Cancellable?
 
-    @Published public var viewportWidth = 0.0
+    // horizontal width of the viewport in points
+    @Published public var viewportWidth: Double = 0.0
+
+    // scale of the viewport
+    @Published public var viewScale: CGFloat = 4.0
 
     // horizontal width of the drawable timeline in points
     @Published public var timelineWidth = 0.0
-    
-    // scale of time spans on screen
-    @Published public var timeZoom = TimelineViewModel.defaultZoom
-    
+
     // points over hours
     @Published public var convertDurationToWidth = 1.0
     
@@ -32,21 +33,25 @@ public class TimelineViewModel: ObservableObject {
     // request the timeline set itself to its initial zoom level
     @Published public var setInitialZoom = false
 
-    let twoWeeksInSeconds = 86400.0*14
-    let tenMinutesInSeconds = 600.0
-    public static let defaultZoom = 4.0
+    // Continuously scroll the timeline to the current time
+    @Published public var autoScrollToNow = false
+
+    // When set, scroll the timeline to center the view on this date, then set to nil
+    @Published public var goToDate: Date?
+
+    let twoWeeksInSeconds = 86400.0 * 14
+    let thirtyMinutesInSeconds = 1800.0
+    public static let defaultZoom = 1.0
 
     public init(
         timelines: [TimelineEvents],
         timelineWidth: Double = 0.0,
-        timeZoom: Double = TimelineViewModel.defaultZoom,
         convertDurationToWidth: Double = 1.0,
         earliestTime: Date = .now,
         latestTime: Date = .now.addingTimeInterval(86400)
     ) {
         self.timelines = timelines
         self.timelineWidth = timelineWidth
-        self.timeZoom = timeZoom
         self.convertDurationToWidth = convertDurationToWidth
         self.earliestTime = earliestTime
         self.latestTime = latestTime
@@ -63,28 +68,42 @@ public class TimelineViewModel: ObservableObject {
         })
     }
 
-    public func setTimelineZoom(_ zoom: Double) {
-        timeZoom = max(zoom, 0.01)
+    public func setTimelineZoom(_ zoom: Double) { 
+        viewScale = abs(zoom)
         recomputeWidth()
     }
 
-    // maximum zoom is ten minutes to span the entire width
-    public func maxZoom(_ frameWidth: Double) -> Double {
-        return frameWidth / tenMinutesInSeconds * 3600.0
+    public func zoomSafely(by scaleMultiplier: Double) {
+        if scaleMultiplier > 1 {
+            viewScale = min(viewScale * scaleMultiplier, maxZoom())
+        } else if scaleMultiplier > 0 && scaleMultiplier < 1 {
+            viewScale = max(viewScale * 0.75, minZoom())
+        }
     }
 
-    // minimum zoom is 2 weeks to span the entire width, or the data timespan if it is less than 2 weeks
-    public func minZoom(_ frameWidth: Double) -> Double {
-        return min(frameWidth / twoWeeksInSeconds * 3600.0, initialZoom(frameWidth))
+    public var canZoomIn: Bool {
+        viewScale < maxZoom()
     }
 
-    public func minOffset(_ frameWidth: Double) -> Double {
-//        return -timelineWidth + frameWidth * 0.5
-        return -timelineWidth + frameWidth
+    public var canZoomOut: Bool {
+        viewScale > minZoom()
     }
 
-    public func maxOffset(_ frameWidth: Double) -> Double {
-//        return frameWidth * 0.5
+    // maximum zoom is thirty minutes to span the viewport width
+    public func maxZoom() -> Double {
+        return viewportWidth / thirtyMinutesInSeconds * 3600.0
+    }
+
+    // minimum zoom is 2 weeks to span the viewport width, or the data timespan if it is less than 2 weeks
+    public func minZoom() -> Double {
+        return min(viewportWidth / twoWeeksInSeconds * 3600.0, initialZoom())
+    }
+
+    public func minOffset() -> Double {
+        return -timelineWidth + viewportWidth
+    }
+
+    public func maxOffset() -> Double {
         return 0
     }
 
@@ -93,12 +112,14 @@ public class TimelineViewModel: ObservableObject {
     }
 
     public func recomputeWidth() {
-        convertDurationToWidth = timeZoom / 3600.0
+        // arbitrarily choose 400 pts as a notional display width
+        // also arbitrarily choose 1 point per hour as a reference conversion multiplier
+        convertDurationToWidth = viewScale / 3600.0
         timelineWidth = timespan * convertDurationToWidth
     }
 
-    public func initialZoom(_ frameWidth: Double) -> Double {
+    public func initialZoom() -> Double {
         let delta = min(latestTime.timeIntervalSince(earliestTime), twoWeeksInSeconds)
-        return frameWidth / delta * 3600.0
+        return viewportWidth / delta * 3600.0
     }
 }

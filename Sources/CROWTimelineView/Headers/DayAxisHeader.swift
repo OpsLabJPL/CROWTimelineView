@@ -11,13 +11,12 @@ struct DayAxisHeader: View {
     @EnvironmentObject var time: Time
     @ObservedObject var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
-    let viewportWidth: Double
     let maxWidthDay = 50.0
 
     var body: some View {
         Canvas { context, size in
             let viewXMin = 8.0
-            let viewXMax = viewportWidth
+            let viewXMax = viewModel.viewportWidth
             var dayStart = Time.shared.calendar.startOfDay(for: viewModel.earliestTime)
             guard var nextDayStart = Time.shared.calendar.date(byAdding: .day, value: 1, to: dayStart) else {
                 return
@@ -64,10 +63,9 @@ struct DayAxisHeader: View {
         }
     }
 
-    init(_ viewModel: TimelineViewModel, scrollOffset: Binding<CGPoint>, viewportWidth: Double) {
+    init(_ viewModel: TimelineViewModel, scrollOffset: Binding<CGPoint>) {
         _viewModel = ObservedObject(wrappedValue: viewModel)
         _scrollOffset = Binding(projectedValue: scrollOffset)
-        self.viewportWidth = viewportWidth
     }
 }
 

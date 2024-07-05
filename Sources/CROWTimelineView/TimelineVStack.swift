@@ -12,7 +12,6 @@ public struct TimelineVStack: View {
     @ObservedObject var viewModel: TimelineViewModel
     @State private var simNow = Time.shared.getSimulatedTime(for: Date.now)
     @State private var scaleWhenMagnifyBegins: CGFloat?
-    @State var viewScale: CGFloat = 4.0
     @State var scrollOffset: CGPoint = .zero
     @State var gestureOffset = 0.0
     @State var selectedTime: Date?
@@ -29,7 +28,7 @@ public struct TimelineVStack: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     // ribbon of day, hour labels at top for context
-                    headerRibbons(geom)
+                    headerRibbons()
                         .onTapGesture { location in
                             let cursorOrigin = location.x - scrollOffset.x
                             let timeOffset = cursorOrigin / viewModel.convertDurationToWidth
@@ -37,7 +36,7 @@ public struct TimelineVStack: View {
                             timeSelection.selectedTime = selectedTime
                         }
 
-                    timelineChartStack(geom)
+                    timelineChartStack()
                 }
 #if os(macOS)
                 macSelectedEvent()
@@ -48,12 +47,12 @@ public struct TimelineVStack: View {
                 MagnifyGesture()
                     .onChanged { value in
                         if let scaleWhenMagnifyBegins {
-                            viewScale = scaleWhenMagnifyBegins * value.magnification
+                            viewModel.viewScale = scaleWhenMagnifyBegins * value.magnification
                         } else {
-                            scaleWhenMagnifyBegins = viewScale
-                            viewScale = viewScale * value.magnification
+                            scaleWhenMagnifyBegins = viewModel.viewScale
+                            viewModel.viewScale = viewModel.viewScale * value.magnification
                         }
-                        print("viewScale: \(viewScale), magnify: \(value.magnification)")
+                        print("viewScale: \(viewModel.viewScale), magnify: \(value.magnification)")
                     }
                     .onEnded { value in
                         Task {
@@ -61,13 +60,16 @@ public struct TimelineVStack: View {
                         }
                     }
             )
-            .onChange(of: viewScale) { _, _ in
-                updateZoom(frameWidth: geom.size.width)
-            }
 
+            .onChange(of: geom.size.width) { _, newWidth in
+                viewModel.viewportWidth = newWidth
+            }
+            .onChange(of: viewModel.viewScale) { _, _ in
+                updateZoom()
+            }
             .onChange(of: viewModel.setInitialZoom) { _, setInitialZoom in
                 if setInitialZoom {
-                    scaleToFitWidth(geom)
+                    scaleToFitWidth()
                     viewModel.setInitialZoom = false
                 }
             }
@@ -80,9 +82,9 @@ public struct TimelineVStack: View {
 #endif
     }
 
-    @ViewBuilder func headerRibbons(_ geom: GeometryProxy) -> some View {
+    @ViewBuilder func headerRibbons() -> some View {
         Group {
-            DayAxisHeader(viewModel, scrollOffset: $scrollOffset, viewportWidth: geom.size.width)
+            DayAxisHeader(viewModel, scrollOffset: $scrollOffset)
                 .background(Color.cyan.opacity(0.5))
                 .frame(height: 15)
                 .clipped()
@@ -90,7 +92,7 @@ public struct TimelineVStack: View {
                     selectedTime = nil
                     timeSelection.selectedTime = nil
                 }
-            HourAxisHeader(viewModel, scrollOffset: $scrollOffset, viewportWidth: geom.size.width)
+            HourAxisHeader(viewModel, scrollOffset: $scrollOffset)
                 .background(Color.cyan.opacity(0.5))
                 .frame(height: 15)
                 .clipped()
@@ -101,10 +103,10 @@ public struct TimelineVStack: View {
         }
     }
 
-    @ViewBuilder func timelineChartStack(_ geom: GeometryProxy) -> some View {
+    @ViewBuilder func timelineChartStack() -> some View {
         // stack of event charts
         ZStack {
-            ScrollViewReader { value in
+            ScrollViewReader { scrollProxy in
                 ScrollViewWithOffsetTracking([.horizontal, .vertical], showsIndicators: true, onScroll: updateScrollOffset) {
                     ZStack {
                         VStack(alignment: .leading) {
@@ -128,7 +130,7 @@ public struct TimelineVStack: View {
                                         scrollOffset: $scrollOffset,
                                         selectedEvent: $selectedTimelineEvent,
                                         convertDurationToWidth: $viewModel.convertDurationToWidth,
-                                        viewportWidth: geom.size.width
+                                        viewportWidth: $viewModel.viewportWidth
                                     )
                                     .systemBackground()
                                 }
@@ -148,7 +150,7 @@ public struct TimelineVStack: View {
                 }
                 .onChange(of: scrollTo) { _, newScrollTo in
                     if let offset = newScrollTo {
-                        value.scrollTo(offset, anchor: UnitPoint(x: 0.0, y: 0.0))
+                        scrollProxy.scrollTo(offset, anchor: UnitPoint(x: 0.0, y: 0.0))
                     } else {
                         print("scrollTo nil")
                     }
@@ -173,10 +175,24 @@ public struct TimelineVStack: View {
             }
         }
         .onReceive(timer) { _ in
-            // TODO convert this to scrollTo
-//            scrollOffset.x -= 1.0 /* second */ * viewModel.convertDurationToWidth
-//            scrollTo = Int(abs(scrollOffset.x) / viewModel.convertDurationToWidth + 1.0 /* second */)
             simNow = Time.shared.getSimulatedTime(for: Date.now)
+            if viewModel.autoScrollToNow {
+                let deltaNow = simNow.timeIntervalSince(viewModel.earliestTime)
+                let centerTimeOffset = viewModel.viewportWidth / viewModel.convertDurationToWidth * 0.5
+                scrollTo = nil
+                Task { @MainActor in
+                    scrollTo = Int(1 + (deltaNow - centerTimeOffset) * viewModel.convertDurationToWidth)
+                    print("scrollTo: \(scrollTo!)")
+                }
+            }
+        }
+        .onChange(of: viewModel.goToDate) { _, newDate in
+            if let newDate {
+                let timeDelta = newDate.timeIntervalSince(viewModel.earliestTime)
+                let scrollOffset = timeDelta * viewModel.convertDurationToWidth - viewModel.viewportWidth * 0.5
+                scrollTo = Int(scrollOffset)
+                viewModel.goToDate = nil
+            }
         }
     }
 
@@ -201,25 +217,23 @@ public struct TimelineVStack: View {
         self.scrollOffset = offset
     }
 
-    func scaleToFitWidth(_ geom: GeometryProxy) {
-        let initialZoom = viewModel.initialZoom(geom.size.width)
+    func scaleToFitWidth() {
+        let initialZoom = viewModel.initialZoom()
         viewModel.setTimelineZoom(initialZoom)
-        viewScale = initialZoom
+        viewModel.viewScale = initialZoom
     }
 
-    @MainActor func updateZoom(frameWidth: CGFloat) {
+    @MainActor func updateZoom() {
+        let viewportCenterOffset = viewModel.viewportWidth * 0.5
         print("startOffset \(scrollOffset.x)")
-        let prevOffset = (scrollOffset.x - frameWidth * 0.5)
+        let prevOffset = (scrollOffset.x - viewportCenterOffset)
         let prevTimeOffset = prevOffset / viewModel.convertDurationToWidth
 
-//        let scale = gestureScale + viewScale
-        let scale = viewScale
-
-        viewModel.setTimelineZoom(min(viewModel.maxZoom(frameWidth), max(viewModel.minZoom(frameWidth), scale)))
-        var newOffset = prevTimeOffset * viewModel.convertDurationToWidth + frameWidth * 0.5
+        viewModel.setTimelineZoom(min(viewModel.maxZoom(), max(viewModel.minZoom(), viewModel.viewScale)))
+        var newOffset = prevTimeOffset * viewModel.convertDurationToWidth + viewportCenterOffset
         print("newOffset: \(newOffset)")
-        let minOffset = viewModel.minOffset(frameWidth)
-        let maxOffset = viewModel.maxOffset(frameWidth)
+        let minOffset = viewModel.minOffset()
+        let maxOffset = viewModel.maxOffset()
         newOffset = max(minOffset, min(maxOffset, newOffset))
         scrollTo = Int(abs(newOffset))
     }

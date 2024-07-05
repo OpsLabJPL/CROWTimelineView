@@ -15,7 +15,7 @@ public struct TimelineCanvas: View {
     @State private var eventBarViewRects: [EventViewRect] = []
     @State private var waitForEventsProgressView = false
     let barHeight = 20.0
-    public let viewportWidth: Double
+    @Binding public var viewportWidth: Double
 
     public var body: some View {
         ZStack {
@@ -40,19 +40,19 @@ public struct TimelineCanvas: View {
             ProgressView()
                 .opacity(waitForEventsProgressView ? 1 : 0)
         }
-        .onChange(of: timeline.collapsed) { _ in
+        .onChange(of: timeline.collapsed) { _, _ in
             updateEventViewRects()
         }
-        .onChange(of: convertDurationToWidth){ _ in
+        .onChange(of: convertDurationToWidth){ _, _ in
             updateEventViewRects()
         }
-        .onChange(of: scrollOffset) { _ in
+        .onChange(of: scrollOffset) { _, _ in
             updateEventViewRects()
         }
-        .onChange(of: timeline) { _ in
+        .onChange(of: timeline) { _, _ in
             createTimeline()
         }
-        .onChange(of: timeline.earliestTime) { _ in
+        .onChange(of: timeline.earliestTime) { _, _ in
             createTimeline()
         }
         .task {
@@ -250,13 +250,13 @@ public struct TimelineCanvas: View {
         scrollOffset: Binding<CGPoint>,
         selectedEvent: Binding<TimelineEvent?>,
         convertDurationToWidth: Binding<Double>,
-        viewportWidth: Double
+        viewportWidth: Binding<Double>
     ) {
         _timeline = Binding(projectedValue: timeline)
         _scrollOffset = Binding(projectedValue: scrollOffset)
         _selectedEvent = Binding(projectedValue: selectedEvent)
         _convertDurationToWidth = Binding(projectedValue: convertDurationToWidth)
-        self.viewportWidth = viewportWidth
+        _viewportWidth = Binding(projectedValue: viewportWidth)
     }
 }
 
@@ -289,7 +289,7 @@ struct EventTimeRect {
                 scrollOffset: .constant(CGPoint(x: 0, y: 0)),
                 selectedEvent: .constant(nil),
                 convertDurationToWidth: .constant(0.02),
-                viewportWidth: 320.0
+                viewportWidth: .constant(320.0)
             )
 
             Color.blue.opacity(0.2).frame(height: 16)
@@ -299,7 +299,7 @@ struct EventTimeRect {
                 scrollOffset: .constant(CGPoint(x: 0, y: 0)),
                 selectedEvent: .constant(nil),
                 convertDurationToWidth: .constant(0.02),
-                viewportWidth: 320.0
+                viewportWidth: .constant(320.0)
             )
 
             Color.blue.opacity(0.2)

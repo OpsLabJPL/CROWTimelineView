@@ -22,6 +22,7 @@ public struct TimelineVStack: View {
     static let timerInterval: Double = 1.0
     let timer = Timer.publish(every: timerInterval, on: .main, in: .common).autoconnect()
     @State var scrollTo: Int?
+    let timelineViewId = 55555
 
     public var body: some View {
         GeometryReader { geom in
@@ -136,21 +137,20 @@ public struct TimelineVStack: View {
                                 }
                             }
                         }
-                        LazyHStack(alignment: .center, spacing: 0) {
-                            if viewModel.timelineWidth <= 0 {
-                                Color.clear
-                            } else {
-                                ForEach(1...Int(viewModel.timelineWidth), id: \.self) { index in
-                                    Color.clear.frame(width: 1)
-                                        .id(index)
-                                }
-                            }
-                        }
+
+                        // Make an invisible view that has the full width of the timeline and an ID to refer to in scrollProxy.scrollTo.
+                        // Using a UnitPoint within this view, the scrollTo method can position the viewport wherever we tell it to.
+                        let timelineWidth = viewModel.timelineWidth > 0 ? viewModel.timelineWidth : 0
+                        Color.clear.frame(width: timelineWidth)
+                            .id(timelineViewId)
                     }
                 }
                 .onChange(of: scrollTo) { _, newScrollTo in
                     if let offset = newScrollTo {
-                        scrollProxy.scrollTo(offset, anchor: UnitPoint(x: 0.0, y: 0.0))
+                        // the normalized scroll offset is used by UnitPoint to scroll the viewport where we ask it to go in view coordinates
+                        // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
+                        let unitPointXOffset = Double(offset) / viewModel.timelineWidth
+                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint(x: unitPointXOffset, y: 0.0))
                     } else {
                         print("scrollTo nil")
                     }

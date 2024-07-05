@@ -27,6 +27,9 @@ public class TimelineViewModel: ObservableObject {
     // latest time in the event data
     @Published public var latestTime: Date = .now.addingTimeInterval(86400)
 
+    // request the timeline set itself to its initial zoom level
+    @Published public var setInitialZoom = false
+
     let twoWeeksInSeconds = 86400.0*14
     let tenMinutesInSeconds = 600.0
     public static let defaultZoom = 4.0

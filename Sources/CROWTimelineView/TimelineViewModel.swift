@@ -16,7 +16,7 @@ public class TimelineViewModel: ObservableObject {
     @Published public var viewportWidth: Double = 0.0
 
     // scale of the viewport
-    @Published public var viewScale: CGFloat = 4.0
+    @Published private(set) var viewScale: CGFloat = 4.0
 
     // horizontal width of the drawable timeline in points
     @Published public var timelineWidth = 0.0
@@ -69,15 +69,15 @@ public class TimelineViewModel: ObservableObject {
     }
 
     public func setTimelineZoom(_ zoom: Double) { 
-        viewScale = abs(zoom)
+        viewScale = min(maxZoom(), max(minZoom(), abs(zoom)))
         recomputeWidth()
     }
 
     public func zoomSafely(by scaleMultiplier: Double) {
         if scaleMultiplier > 1 {
-            viewScale = min(viewScale * scaleMultiplier, maxZoom())
+            setTimelineZoom(min(viewScale * scaleMultiplier, maxZoom()))
         } else if scaleMultiplier > 0 && scaleMultiplier < 1 {
-            viewScale = max(viewScale * 0.75, minZoom())
+            setTimelineZoom(max(viewScale * scaleMultiplier, minZoom()))
         }
     }
 
@@ -112,8 +112,6 @@ public class TimelineViewModel: ObservableObject {
     }
 
     public func recomputeWidth() {
-        // arbitrarily choose 400 pts as a notional display width
-        // also arbitrarily choose 1 point per hour as a reference conversion multiplier
         convertDurationToWidth = viewScale / 3600.0
         timelineWidth = timespan * convertDurationToWidth
     }

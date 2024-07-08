@@ -15,6 +15,9 @@ public class TimelineViewModel: ObservableObject {
     // horizontal width of the viewport in points
     @Published public var viewportWidth: Double = 0.0
 
+    // TODO
+    @Published public var scrollOffset: CGPoint = .zero
+
     // scale of the viewport
     @Published private(set) var viewScale: CGFloat = 4.0
 
@@ -38,6 +41,12 @@ public class TimelineViewModel: ObservableObject {
 
     // When set, scroll the timeline to center the view on this date, then set to nil
     @Published public var goToDate: Date?
+
+    // TODO
+    @Published public var viewCenterTimeDeltaBeforeZoom: Double = 0.0
+
+    // TODO
+    @Published public var scrollOffsetAfterZoom = 0.0
 
     let twoWeeksInSeconds = 86400.0 * 14
     let thirtyMinutesInSeconds = 1800.0
@@ -64,23 +73,44 @@ public class TimelineViewModel: ObservableObject {
             }
             self.earliestTime = earliest
             self.latestTime = latest
-            self.recomputeWidth()
+            self.recomputeTimelineWidthForScale()
         })
     }
 
-    public func setTimelineZoom(_ zoom: Double) { 
+    @MainActor public func setTimelineZoom(_ zoom: Double) {
+        let viewXPointOffset = -scrollOffset.x + viewportWidth * 0.5
+//        print("view x offset: \(viewXPointOffset)")
+
+        viewCenterTimeDeltaBeforeZoom = viewXPointOffset / convertDurationToWidth
+
+        //        let centerTime = earliestTime.addingTimeInterval(viewCenterTimeDeltaBeforeZoom)
+//        print("Center time: \(centerTime)")
+
+//        print("convert before: \(convertDurationToWidth)")
+//        print("viewScale before: \(viewScale)")
+
         viewScale = min(maxZoom(), max(minZoom(), abs(zoom)))
-        recomputeWidth()
+
+//        print("viewScale after: \(viewScale)")
+  
+        recomputeTimelineWidthForScale()
+//        print("convert after: \(convertDurationToWidth)")
+        scrollOffsetAfterZoom = viewCenterTimeDeltaBeforeZoom * convertDurationToWidth - viewportWidth * 0.5
     }
 
-    public func zoomSafely(by scaleMultiplier: Double) {
+    public func recomputeTimelineWidthForScale() {
+        convertDurationToWidth = viewScale / 3600.0
+        timelineWidth = timespan * convertDurationToWidth
+    }
+
+    @MainActor public func zoomSafely(by scaleMultiplier: Double) {
         if scaleMultiplier > 1 {
             setTimelineZoom(min(viewScale * scaleMultiplier, maxZoom()))
         } else if scaleMultiplier > 0 && scaleMultiplier < 1 {
             setTimelineZoom(max(viewScale * scaleMultiplier, minZoom()))
         }
     }
-
+    
     public var canZoomIn: Bool {
         viewScale < maxZoom()
     }
@@ -109,11 +139,6 @@ public class TimelineViewModel: ObservableObject {
 
     public var timespan: TimeInterval {
         latestTime.timeIntervalSinceReferenceDate - earliestTime.timeIntervalSinceReferenceDate
-    }
-
-    public func recomputeWidth() {
-        convertDurationToWidth = viewScale / 3600.0
-        timelineWidth = timespan * convertDurationToWidth
     }
 
     public func initialZoom() -> Double {

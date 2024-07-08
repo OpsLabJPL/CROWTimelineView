@@ -57,7 +57,7 @@ public struct TimelineCanvas: View {
         .onChange(of: timeline.collapsed) { _, _ in
             updateEventViewRects()
         }
-        .onChange(of: convertDurationToWidth){ _, _ in
+        .onChange(of: convertDurationToWidth) { _, _ in
             updateEventViewRects()
         }
         .onChange(of: scrollOffset) { _, _ in

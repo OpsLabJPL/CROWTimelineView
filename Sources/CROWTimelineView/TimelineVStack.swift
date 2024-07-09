@@ -5,6 +5,7 @@
 //  Created by Mark Powell on 6/26/24.
 //
 
+import OSLog
 import SwiftUI
 
 public struct TimelineVStack: View {
@@ -22,10 +23,11 @@ public struct TimelineVStack: View {
     static let timerInterval: Double = 1.0
     let timer = Timer.publish(every: timerInterval, on: .main, in: .common).autoconnect()
     @State private var scrollTo: Double?
+    @State private var didScrollAfterZoomGesture = false
     let timelineViewId = 55555
+    let logger = Logger(subsystem: "TimelineView", category: "navigation")
 
     public var body: some View {
-        let _ = Self._printChanges()
         GeometryReader { geom in
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
@@ -48,27 +50,34 @@ public struct TimelineVStack: View {
             .gesture(
                 MagnifyGesture()
                     .onChanged { value in
-                        setPinchZoom(value)
-                        print("pinched to \(value) and scale is \(viewModel.viewScale)")
+                        Task { @MainActor in
+                            logger.info("changing zoom by \(value.magnification)")
+                            if didScrollAfterZoomGesture {
+                                didScrollAfterZoomGesture = false
+                                setPinchZoom(value)
+                            }
+                        }
                     }
                     .onEnded { value in
-//                        setPinchZoom(value)
-                        print("pinch ended value is \(value)")
                         Task { @MainActor in
-                            scaleWhenMagnifyBegins = nil
+                            logger.info("ending zoom on \(value.magnification)")
+                            if didScrollAfterZoomGesture {
+                                didScrollAfterZoomGesture = false
+                                setPinchZoom(value)
+                            }
+                            Task { @MainActor in
+                                scaleWhenMagnifyBegins = nil
+                            }
                         }
                     }
             )
 
             .onChange(of: geom.size.width) { _, newWidth in
-                print("view width resized to \(newWidth)")
                 viewModel.viewportWidth = newWidth
-            }
-            .onChange(of: viewModel.timelineWidth) { oldWidth, newWidth in
-                print("timeline width resized from \(oldWidth) to \(newWidth)")
             }
             .onChange(of: viewModel.scrollOffsetAfterZoom) { _, newScrollOffset in
                 scrollTo = newScrollOffset
+                didScrollAfterZoomGesture = true
             }
             .onChange(of: viewModel.setInitialZoom) { _, setInitialZoom in
                 if setInitialZoom {
@@ -85,7 +94,7 @@ public struct TimelineVStack: View {
 #endif
     }
 
-    func setPinchZoom(_ value: MagnifyGesture.Value) {
+    @MainActor func setPinchZoom(_ value: MagnifyGesture.Value) {
         if let scaleWhenMagnifyBegins {
             viewModel.setTimelineZoom(scaleWhenMagnifyBegins * value.magnification)
         } else {
@@ -162,8 +171,6 @@ public struct TimelineVStack: View {
                                     let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
                                     scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
                                     scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
-                                } else {
-                                    print("scrollTo is nil")
                                 }
                             }
                     }
@@ -192,7 +199,6 @@ public struct TimelineVStack: View {
             if viewModel.autoScrollToNow {
                 let durationUntilNow = simNow.timeIntervalSince(viewModel.earliestTime)
                 let newScrollTo = durationUntilNow * viewModel.convertDurationToWidth - viewModel.viewportWidth * 0.5
-                print("newScrollTo: \(newScrollTo)")
                 if scrollTo == newScrollTo {
                     scrollTo = nil // in case the next scrollTo value is the same as the previous one, force an update
                 }
@@ -208,12 +214,6 @@ public struct TimelineVStack: View {
             }
         }
     }
-
-//    @MainActor func recenterScrollOffsetAfterZoom() {
-//        print("convert after: \(viewModel.convertDurationToWidth)")
-//        let scrollOffset = viewModel.viewCenterTimeDeltaBeforeZoom * viewModel.convertDurationToWidth - viewModel.viewportWidth * 0.5
-//        scrollTo = scrollOffset
-//    }
 
     /// on Mac show event detail as a right-side view
     @ViewBuilder func macSelectedEvent() -> some View {
@@ -234,6 +234,7 @@ public struct TimelineVStack: View {
     
     func updateScrollOffset(_ offset: CGPoint) {
         viewModel.scrollOffset = offset
+        logger.debug("scrollOffset \(offset.x) width: \(viewModel.timelineWidth)")
     }
 
     func scaleToFitWidth() {

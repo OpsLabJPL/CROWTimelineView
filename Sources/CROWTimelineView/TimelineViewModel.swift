@@ -15,18 +15,18 @@ public class TimelineViewModel: ObservableObject {
     // horizontal width of the viewport in points
     @Published public var viewportWidth: Double = 0.0
 
-    // TODO
+    // offset of the ScrollView containing the timelines
     @Published public var scrollOffset: CGPoint = .zero
 
     // scale of the viewport
-    @Published private(set) var viewScale: CGFloat = 4.0
+    private(set) var viewScale: CGFloat = 4.0
 
     // horizontal width of the drawable timeline in points
-    @Published public var timelineWidth = 0.0
+    private(set) var timelineWidth = 0.0
 
     // points over hours
-    @Published public var convertDurationToWidth = 1.0
-    
+    public var convertDurationToWidth = 1.0
+
     // earliest time in the event data
     @Published public var earliestTime: Date = .now
 
@@ -42,11 +42,16 @@ public class TimelineViewModel: ObservableObject {
     // When set, scroll the timeline to center the view on this date, then set to nil
     @Published public var goToDate: Date?
 
-    // TODO
-    @Published public var viewCenterTimeDeltaBeforeZoom: Double = 0.0
+    // the duration since earliestTime of the center of the viewport
+    private(set) var viewCenterTimeDeltaBeforeZoom: Double = 0.0
 
-    // TODO
-    @Published public var scrollOffsetAfterZoom = 0.0
+    // the new ScrollView offset position after the user zooms the timeline
+    public var scrollOffsetAfterZoom = 0.0 {
+        willSet {
+            objectWillChange.send()
+        }
+    }
+
 
     let twoWeeksInSeconds = 86400.0 * 14
     let thirtyMinutesInSeconds = 1800.0
@@ -79,23 +84,17 @@ public class TimelineViewModel: ObservableObject {
 
     @MainActor public func setTimelineZoom(_ zoom: Double) {
         let viewXPointOffset = -scrollOffset.x + viewportWidth * 0.5
-//        print("view x offset: \(viewXPointOffset)")
-
         viewCenterTimeDeltaBeforeZoom = viewXPointOffset / convertDurationToWidth
-
-        //        let centerTime = earliestTime.addingTimeInterval(viewCenterTimeDeltaBeforeZoom)
-//        print("Center time: \(centerTime)")
-
-//        print("convert before: \(convertDurationToWidth)")
-//        print("viewScale before: \(viewScale)")
-
         viewScale = min(maxZoom(), max(minZoom(), abs(zoom)))
-
-//        print("viewScale after: \(viewScale)")
-  
         recomputeTimelineWidthForScale()
-//        print("convert after: \(convertDurationToWidth)")
-        scrollOffsetAfterZoom = viewCenterTimeDeltaBeforeZoom * convertDurationToWidth - viewportWidth * 0.5
+        let newOffset = viewCenterTimeDeltaBeforeZoom * convertDurationToWidth - viewportWidth * 0.5
+
+        // force an update even if the newOffset is the same as the current scrollOffset
+        if scrollOffsetAfterZoom == newOffset {
+            scrollOffsetAfterZoom = newOffset - 0.000001
+        } else {
+            scrollOffsetAfterZoom = newOffset
+        }
     }
 
     public func recomputeTimelineWidthForScale() {

@@ -30,12 +30,12 @@ struct ZoomModifier: ViewModifier {
                     .onChanged { val in
                         let delta = val / gestureScale
                         gestureScale *= delta
-                        print("gestureScale: \(gestureScale)")
+//                        print("gestureScale: \(gestureScale)")
                     }
                     .onEnded { _ in
                         currentScale = max(minZoom, min(maxZoom, gestureScale * currentScale))
                         gestureScale = 1.0
-                        print("currentScale: \(currentScale)")
+//                        print("currentScale: \(currentScale)")
                     }
             )
     }

@@ -8,15 +8,28 @@
 import Foundation
 import Combine
 
-public class TimelineViewModel: ObservableObject {
-    @Published public var timelines: [TimelineEvents] = []
-    var timelinesChangeResponder: Cancellable?
+@Observable
+public class TimelineViewModel {
+    public var timelines: [TimelineEvents] = [] {
+        didSet {
+            var earliest = timelines.first?.earliestTime ?? .distantFuture
+            var latest = timelines.first?.latestTime ?? .distantPast
+            for timeline in timelines {
+                earliest = min(timeline.earliestTime, earliest)
+                latest = max(timeline.latestTime, latest)
+            }
+            self.earliestTime = earliest
+            self.latestTime = latest
+            self.recomputeTimelineWidthForScale()
+        }
+    }
+//    private var timelinesChangeResponder: Cancellable?
 
     // horizontal width of the viewport in points
-    @Published public var viewportWidth: Double = 0.0
+    public var viewportWidth: Double = 0.0
 
     // offset of the ScrollView containing the timelines
-    @Published public var scrollOffset: CGPoint = .zero
+    public var scrollOffset: CGPoint = .zero
 
     // scale of the viewport
     private(set) var viewScale: CGFloat = 4.0
@@ -28,30 +41,29 @@ public class TimelineViewModel: ObservableObject {
     public var convertDurationToWidth = 1.0
 
     // earliest time in the event data
-    @Published public var earliestTime: Date = .now
+    public var earliestTime: Date = .now
 
     // latest time in the event data
-    @Published public var latestTime: Date = .now.addingTimeInterval(86400)
+    public var latestTime: Date = .now.addingTimeInterval(86400)
 
     // request the timeline set itself to its initial zoom level
-    @Published public var setInitialZoom = false
+    public var setInitialZoom = false
 
     // Continuously scroll the timeline to the current time
-    @Published public var autoScrollToNow = false
+    public var autoScrollToNow = false
 
     // When set, scroll the timeline to center the view on this date, then set to nil
-    @Published public var goToDate: Date?
+    public var goToDate: Date?
 
     // the duration since earliestTime of the center of the viewport
     private(set) var viewCenterTimeDeltaBeforeZoom: Double = 0.0
 
     // the new ScrollView offset position after the user zooms the timeline
-    public var scrollOffsetAfterZoom = 0.0 {
-        willSet {
-            objectWillChange.send()
-        }
-    }
-
+    public var scrollOffsetAfterZoom = 0.0 // {
+//        willSet {
+//            objectWillChange.send()
+//        }
+    //}
 
     let twoWeeksInSeconds = 86400.0 * 14
     let thirtyMinutesInSeconds = 1800.0
@@ -69,17 +81,17 @@ public class TimelineViewModel: ObservableObject {
         self.convertDurationToWidth = convertDurationToWidth
         self.earliestTime = earliestTime
         self.latestTime = latestTime
-        timelinesChangeResponder = $timelines.sink(receiveValue: { timelines in
-            var earliest = timelines.first?.earliestTime ?? .distantFuture
-            var latest = timelines.first?.latestTime ?? .distantPast
-            for timeline in timelines {
-                earliest = min(timeline.earliestTime, earliest)
-                latest = max(timeline.latestTime, latest)
-            }
-            self.earliestTime = earliest
-            self.latestTime = latest
-            self.recomputeTimelineWidthForScale()
-        })
+//        timelinesChangeResponder = $timelines.sink(receiveValue: { timelines in
+//            var earliest = timelines.first?.earliestTime ?? .distantFuture
+//            var latest = timelines.first?.latestTime ?? .distantPast
+//            for timeline in timelines {
+//                earliest = min(timeline.earliestTime, earliest)
+//                latest = max(timeline.latestTime, latest)
+//            }
+//            self.earliestTime = earliest
+//            self.latestTime = latest
+//            self.recomputeTimelineWidthForScale()
+//        })
     }
 
     @MainActor public func setTimelineZoom(_ zoom: Double) {

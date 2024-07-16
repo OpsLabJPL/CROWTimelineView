@@ -9,7 +9,7 @@ import SwiftUI
 
 struct HourAxisHeader: View {
     @EnvironmentObject var time: Time
-    @ObservedObject var viewModel: TimelineViewModel
+    @Bindable var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
     let maxWidthHour = 15.0
 
@@ -52,7 +52,7 @@ struct HourAxisHeader: View {
     }
 
     init(_ viewModel: TimelineViewModel, scrollOffset: Binding<CGPoint>) {
-        _viewModel = ObservedObject(wrappedValue: viewModel)
+        _viewModel = Bindable(viewModel)
         _scrollOffset = Binding(projectedValue: scrollOffset)
     }
 }

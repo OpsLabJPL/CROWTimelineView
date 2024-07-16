@@ -9,7 +9,7 @@ import SwiftUI
 
 struct DayAxisHeader: View {
     @EnvironmentObject var time: Time
-    @ObservedObject var viewModel: TimelineViewModel
+    @Bindable var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
     let maxWidthDay = 50.0
 
@@ -64,7 +64,7 @@ struct DayAxisHeader: View {
     }
 
     init(_ viewModel: TimelineViewModel, scrollOffset: Binding<CGPoint>) {
-        _viewModel = ObservedObject(wrappedValue: viewModel)
+        _viewModel = Bindable(viewModel)
         _scrollOffset = Binding(projectedValue: scrollOffset)
     }
 }

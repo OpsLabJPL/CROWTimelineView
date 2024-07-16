@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CursorLine: View {
-    @ObservedObject var viewModel: TimelineViewModel
+    @Bindable var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
     @Binding var selectedTime: Date?
 

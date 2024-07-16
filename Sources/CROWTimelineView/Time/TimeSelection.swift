@@ -5,10 +5,11 @@
 //  Created by Mark Powell on 6/26/24.
 //
 
-import Foundation
+import SwiftUI
 
-public class TimeSelection: ObservableObject {
-    @Published public var selectedTime: Date?
+@Observable 
+public class TimeSelection {
+    public var selectedTime: Date?
 
     public init(selectedTime: Date? = nil) {
         self.selectedTime = selectedTime

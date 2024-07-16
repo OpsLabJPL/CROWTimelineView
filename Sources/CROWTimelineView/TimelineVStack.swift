@@ -9,8 +9,8 @@ import OSLog
 import SwiftUI
 
 public struct TimelineVStack: View {
-    @EnvironmentObject var timeSelection: TimeSelection
-    @ObservedObject var viewModel: TimelineViewModel
+    @Bindable var viewModel: TimelineViewModel
+    @Bindable var timeSelection: TimeSelection
     @State private var simNow = Time.shared.getSimulatedTime(for: Date.now)
     @State private var scaleWhenMagnifyBegins: CGFloat?
     @State var gestureOffset = 0.0
@@ -40,7 +40,7 @@ public struct TimelineVStack: View {
                             timeSelection.selectedTime = selectedTime
                         }
 
-                    timelineChartStack()
+                    timelineScrollView()
                 }
 #if os(macOS)
                 macSelectedEvent()
@@ -123,55 +123,12 @@ public struct TimelineVStack: View {
         }
     }
 
-    @ViewBuilder func timelineChartStack() -> some View {
+    @ViewBuilder func timelineScrollView() -> some View {
         // stack of event charts
         ZStack {
             ScrollViewReader { scrollProxy in
                 ScrollViewWithOffsetTracking([.horizontal, .vertical], showsIndicators: true, onScroll: updateScrollOffset) {
-                    ZStack {
-                        VStack(alignment: .leading) {
-                            ForEach($viewModel.timelines) { $timeline in
-                                VStack(alignment: .leading) {
-                                    HStack {
-                                        Button {
-                                            timeline.collapsed.toggle()
-                                        } label: {
-                                            Image(
-                                                systemName: timeline.collapsed ? "chevron.down.circle" : "chevron.up.circle"
-                                            )
-                                        }
-                                        Text(timeline.name)
-                                    }
-                                    .systemBackgroundSectionHeader()
-                                    .offset(x: -viewModel.scrollOffset.x)
-                                    TimelineCanvas(
-                                        timeline: $timeline,
-                                        earliestTime: $viewModel.earliestTime,
-                                        scrollOffset: $viewModel.scrollOffset,
-                                        selectedEvent: $selectedTimelineEvent,
-                                        convertDurationToWidth: $viewModel.convertDurationToWidth,
-                                        viewportWidth: $viewModel.viewportWidth
-                                    )
-                                    .systemBackground()
-                                }
-                            }
-                        }
-
-                        // Make an invisible view that has the full width of the timeline and an ID to refer to in scrollProxy.scrollTo.
-                        // Using a UnitPoint within this view, the scrollTo method can position the viewport wherever we tell it to.
-                        let timelineWidth = viewModel.timelineWidth > 0 ? viewModel.timelineWidth : 0
-                        Color.clear.frame(width: timelineWidth)
-                            .id(timelineViewId)
-                            .onChange(of: scrollTo) { _, newScrollTo in
-                                if let offset = newScrollTo {
-                                    // the normalized scroll offset is used by UnitPoint to scroll the viewport where we ask it to go in view coordinates
-                                    // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
-                                    let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
-                                    scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
-                                    scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
-                                }
-                            }
-                    }
+                    timelineChartStack(scrollProxy)
                 }
             }
 
@@ -213,6 +170,53 @@ public struct TimelineVStack: View {
         }
     }
 
+    @ViewBuilder func timelineChartStack(_ scrollProxy: ScrollViewProxy) -> some View {
+        ZStack {
+            VStack(alignment: .leading) {
+                ForEach($viewModel.timelines) { $timeline in
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Button {
+                                timeline.collapsed = !timeline.collapsed
+                            } label: {
+                                Image(
+                                    systemName: timeline.collapsed ? "chevron.down.circle" : "chevron.up.circle"
+                                )
+                            }
+                            Text(timeline.name)
+                        }
+                        .systemBackgroundSectionHeader()
+                        .offset(x: -viewModel.scrollOffset.x)
+                        TimelineCanvas(
+                            timeline: $timeline,
+                            earliestTime: $viewModel.earliestTime,
+                            scrollOffset: $viewModel.scrollOffset,
+                            selectedEvent: $selectedTimelineEvent,
+                            convertDurationToWidth: $viewModel.convertDurationToWidth,
+                            viewportWidth: $viewModel.viewportWidth
+                        )
+                        .systemBackground()
+                    }
+                }
+            }
+            
+            // Make an invisible view that has the full width of the timeline and an ID to refer to in scrollProxy.scrollTo.
+            // Using a UnitPoint within this view, the scrollTo method can position the viewport wherever we tell it to.
+            let timelineWidth = viewModel.timelineWidth > 0 ? viewModel.timelineWidth : 0
+            Color.clear.frame(width: timelineWidth)
+                .id(timelineViewId)
+                .onChange(of: scrollTo) { _, newScrollTo in
+                    if let offset = newScrollTo {
+                        // the normalized scroll offset is used by UnitPoint to scroll the viewport where we ask it to go in view coordinates
+                        // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
+                        let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
+                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
+                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
+                    }
+                }
+        }
+    }
+
     /// on Mac show event detail as a right-side view
     @ViewBuilder func macSelectedEvent() -> some View {
         if selectedTimelineEvent != nil {
@@ -235,7 +239,7 @@ public struct TimelineVStack: View {
         logger.debug("scrollOffset \(offset.x) width: \(viewModel.timelineWidth)")
     }
 
-    func scaleToFitWidth() {
+    @MainActor func scaleToFitWidth() {
         let initialZoom = viewModel.initialZoom()
         viewModel.setTimelineZoom(initialZoom)
     }
@@ -244,8 +248,9 @@ public struct TimelineVStack: View {
         collapsed ? "chevron.down" : "chevron.up"
     }
     
-    public init(viewModel: TimelineViewModel) {
-        _viewModel = ObservedObject(wrappedValue: viewModel)
+    public init(viewModel: TimelineViewModel, timeSelection: TimeSelection) {
+        _viewModel = Bindable(viewModel)
+        _timeSelection = Bindable(timeSelection)
         _convertDurationToWidthWhenMagnifyBegan = State(wrappedValue: viewModel.convertDurationToWidth)
     }
 }
@@ -272,8 +277,9 @@ struct SelectedEventSheet: ViewModifier {
 }
 
 #Preview {
+    @State var timeSelection = TimeSelection()
     let viewModel = TimelineViewModel(
         timelines: [ TimelineEvents.previewEvents() , TimelineEvents.morePreviewEvents() ]
     )
-    return TimelineVStack(viewModel: viewModel)
+    return TimelineVStack(viewModel: viewModel, timeSelection: timeSelection)
 }

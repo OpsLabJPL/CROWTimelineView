@@ -71,7 +71,6 @@ public struct TimelineVStack: View {
                         }
                     }
             )
-
             .onChange(of: geom.size.width) { _, newWidth in
                 viewModel.viewportWidth = newWidth
             }
@@ -134,15 +133,14 @@ public struct TimelineVStack: View {
                             ForEach($viewModel.timelines) { $timeline in
                                 VStack(alignment: .leading) {
                                     HStack {
-                                        Text(timeline.name)
-                                        Spacer()
                                         Button {
                                             timeline.collapsed.toggle()
                                         } label: {
                                             Image(
-                                                systemName: timeline.collapsed ? "chevron.down" : "chevron.up"
+                                                systemName: timeline.collapsed ? "chevron.down.circle" : "chevron.up.circle"
                                             )
                                         }
+                                        Text(timeline.name)
                                     }
                                     .systemBackgroundSectionHeader()
                                     .offset(x: -viewModel.scrollOffset.x)

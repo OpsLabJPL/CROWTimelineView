@@ -7,14 +7,15 @@
 
 import Foundation
 
+@Observable
 public class TimelineEvents: ObservableObject, Hashable, Identifiable, Equatable, Codable {
     public var id: String = UUID().uuidString
     public let name: String
-    @Published public var events: [TimelineEvent]
+    public var events: [TimelineEvent]
     public let maxRows: Int
-    @Published public var earliestTime: Date
-    @Published public var latestTime: Date
-    @Published public var collapsed: Bool
+    public var earliestTime: Date
+    public var latestTime: Date
+    public var collapsed: Bool
     public let ordinal: Int
 
     enum CodingKeys: String, CodingKey {

@@ -29,6 +29,22 @@ public struct TimelineEvent: Identifiable, Equatable, Codable {
     var endTime: Date { endUTC }
     var activityName: String { name }
 
+    public init(
+        name: String,
+        id: String,
+        color: String? = nil,
+        username: String? = nil,
+        duration: Double,
+        startUTC: Date
+    ) {
+        self.name = name
+        self.id = id
+        self.color = color
+        self.username = username
+        self.duration = duration
+        self.startUTC = startUTC
+    }
+
     public static func == (lhs: TimelineEvent, rhs: TimelineEvent) -> Bool {
         lhs.id == rhs.id
     }

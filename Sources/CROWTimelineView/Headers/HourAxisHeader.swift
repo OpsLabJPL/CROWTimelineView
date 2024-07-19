@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct HourAxisHeader: View {
-    @EnvironmentObject var time: Time
     @Bindable var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
     let maxWidthHour = 15.0

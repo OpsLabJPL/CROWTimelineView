@@ -16,8 +16,7 @@ public struct TimelineVStack: View {
     @State var gestureOffset = 0.0
     @State private var convertDurationToWidthWhenMagnifyBegan: Double
     @State var selectedTime: Date?
-    @State var selectedTimelineEvent: TimelineEvent?
-    @State var showSelectedEvent = false
+    @Binding var selectedTimelineEvent: TimelineEvent?
     @State private var navigateToDate = Date.now
     @State private var showDatePicker = false
     static let timerInterval: Double = 1.0
@@ -29,24 +28,21 @@ public struct TimelineVStack: View {
 
     public var body: some View {
         GeometryReader { geom in
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    // ribbon of day, hour labels at top for context
-                    headerRibbons()
-                        .onTapGesture { location in
-                            let cursorOrigin = location.x - viewModel.scrollOffset.x
-                            let timeOffset = cursorOrigin / viewModel.convertDurationToWidth
-                            selectedTime = viewModel.earliestTime.addingTimeInterval(timeOffset)
-                            timeSelection.selectedTime = selectedTime
-                        }
+            VStack(alignment: .leading, spacing: 2) {
+                // ribbon of day, hour labels at top for context
+                headerRibbons()
+                    .onTapGesture { location in
+                        let cursorOrigin = location.x - viewModel.scrollOffset.x
+                        let timeOffset = cursorOrigin / viewModel.convertDurationToWidth
+                        selectedTime = viewModel.earliestTime.addingTimeInterval(timeOffset)
+                        timeSelection.selectedTime = selectedTime
+                    }
 
-                    timelineScrollView()
-                }
-#if os(macOS)
-                macSelectedEvent()
-#endif
+                timelineScrollView()
             }
-            .navigationTitle("offset: \(Int(viewModel.scrollOffset.x)) w: \(Int(viewModel.timelineWidth))")
+
+            // display ScrollView offset position and width for debugging and performance analysis
+            // .navigationTitle("offset: \(Int(viewModel.scrollOffset.x)) w: \(Int(viewModel.timelineWidth))")
             .gesture(
                 MagnifyGesture()
                     .onChanged { value in
@@ -71,8 +67,10 @@ public struct TimelineVStack: View {
                         }
                     }
             )
-            .onChange(of: geom.size.width) { _, newWidth in
-                viewModel.viewportWidth = newWidth
+            .onChange(of: geom.size) { _, newSize in
+                Task { @MainActor in
+                    viewModel.viewportWidth = newSize.width
+                }
             }
             .onChange(of: viewModel.scrollOffsetAfterZoom) { _, newScrollOffset in
                 scrollTo = newScrollOffset
@@ -85,12 +83,6 @@ public struct TimelineVStack: View {
                 }
             }
         }
-#if os(iOS)
-        .modifier(SelectedEventSheet(
-            showSelectedEvent: $showSelectedEvent,
-            selectedTimelineEvent: $selectedTimelineEvent
-        ))
-#endif
     }
 
     @MainActor func setPinchZoom(_ value: MagnifyGesture.Value) {
@@ -141,14 +133,6 @@ public struct TimelineVStack: View {
                 .frame(maxHeight: .infinity)
         }
         .clipped()
-        .onChange(of: selectedTimelineEvent) { _, event in
-            showSelectedEvent = event != nil
-        }
-        .onChange(of: showSelectedEvent) { _, show in
-            if !show {
-                selectedTimelineEvent = nil
-            }
-        }
         .onReceive(timer) { _ in
             simNow = Time.shared.getSimulatedTime(for: Date.now)
             if viewModel.autoScrollToNow {
@@ -184,6 +168,7 @@ public struct TimelineVStack: View {
                                 )
                             }
                             Text(timeline.name)
+                            Spacer()
                         }
                         .systemBackgroundSectionHeader()
                         .offset(x: -viewModel.scrollOffset.x)
@@ -216,23 +201,6 @@ public struct TimelineVStack: View {
                 }
         }
     }
-
-    /// on Mac show event detail as a right-side view
-    @ViewBuilder func macSelectedEvent() -> some View {
-        if selectedTimelineEvent != nil {
-            VStack {
-                TimelineEventDetail(event: selectedTimelineEvent!)
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTimelineEvent = nil
-                    }
-                } label: {
-                    Label("Close", systemImage: "x.circle.fill")
-                }
-                Spacer()
-            }
-        }
-    }
     
     func updateScrollOffset(_ offset: CGPoint) {
         viewModel.scrollOffset = offset
@@ -248,31 +216,15 @@ public struct TimelineVStack: View {
         collapsed ? "chevron.down" : "chevron.up"
     }
     
-    public init(viewModel: TimelineViewModel, timeSelection: TimeSelection) {
+    public init(
+        viewModel: TimelineViewModel,
+        timeSelection: TimeSelection,
+        selectedTimelineEvent: Binding<TimelineEvent?>
+    ) {
         _viewModel = Bindable(viewModel)
         _timeSelection = Bindable(timeSelection)
+        _selectedTimelineEvent = Binding(projectedValue: selectedTimelineEvent)
         _convertDurationToWidthWhenMagnifyBegan = State(wrappedValue: viewModel.convertDurationToWidth)
-    }
-}
-
-/// on iPhone show event detail as a bottom sheet
-struct SelectedEventSheet: ViewModifier {
-    @Binding var showSelectedEvent: Bool
-    @Binding var selectedTimelineEvent: TimelineEvent?
-
-    func body(content: Content) -> some View {
-        content
-            .sheet(isPresented: $showSelectedEvent) {
-                Group {
-                    if let event = selectedTimelineEvent {
-                        TimelineEventDetail(event: event)
-                    } else {
-                        Text("No event selected")
-                    }
-                }
-                .presentationDetents([.fraction(0.35)])
-                .presentationDragIndicator(.visible)
-            }
     }
 }
 
@@ -281,5 +233,9 @@ struct SelectedEventSheet: ViewModifier {
     let viewModel = TimelineViewModel(
         timelines: [ TimelineEvents.previewEvents() , TimelineEvents.morePreviewEvents() ]
     )
-    return TimelineVStack(viewModel: viewModel, timeSelection: timeSelection)
+    return TimelineVStack(
+        viewModel: viewModel,
+        timeSelection: timeSelection,
+        selectedTimelineEvent: .constant(nil)
+    )
 }

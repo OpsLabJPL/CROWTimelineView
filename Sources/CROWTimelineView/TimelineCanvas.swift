@@ -47,6 +47,8 @@ public struct TimelineCanvas: View {
                     print(event.name)
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedEvent = selectedEvent == event ? nil : event
+                        // scroll imperceptibly to force a redraw for selection feedback
+                        scrollOffset.x += 0.01
                     }
                 }
             }
@@ -61,6 +63,9 @@ public struct TimelineCanvas: View {
             updateEventViewRects()
         }
         .onChange(of: scrollOffset) { _, _ in
+            updateEventViewRects()
+        }
+        .onChange(of: viewportWidth) { _, _ in
             updateEventViewRects()
         }
         .onChange(of: timeline) { _, _ in

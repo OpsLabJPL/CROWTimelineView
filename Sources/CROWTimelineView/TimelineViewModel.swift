@@ -23,7 +23,6 @@ public class TimelineViewModel {
             self.recomputeTimelineWidthForScale()
         }
     }
-//    private var timelinesChangeResponder: Cancellable?
 
     // horizontal width of the viewport in points
     public var viewportWidth: Double = 0.0
@@ -59,11 +58,7 @@ public class TimelineViewModel {
     private(set) var viewCenterTimeDeltaBeforeZoom: Double = 0.0
 
     // the new ScrollView offset position after the user zooms the timeline
-    public var scrollOffsetAfterZoom = 0.0 // {
-//        willSet {
-//            objectWillChange.send()
-//        }
-    //}
+    public var scrollOffsetAfterZoom = 0.0
 
     let twoWeeksInSeconds = 86400.0 * 14
     let thirtyMinutesInSeconds = 1800.0
@@ -81,17 +76,6 @@ public class TimelineViewModel {
         self.convertDurationToWidth = convertDurationToWidth
         self.earliestTime = earliestTime
         self.latestTime = latestTime
-//        timelinesChangeResponder = $timelines.sink(receiveValue: { timelines in
-//            var earliest = timelines.first?.earliestTime ?? .distantFuture
-//            var latest = timelines.first?.latestTime ?? .distantPast
-//            for timeline in timelines {
-//                earliest = min(timeline.earliestTime, earliest)
-//                latest = max(timeline.latestTime, latest)
-//            }
-//            self.earliestTime = earliest
-//            self.latestTime = latest
-//            self.recomputeTimelineWidthForScale()
-//        })
     }
 
     @MainActor public func setTimelineZoom(_ zoom: Double) {

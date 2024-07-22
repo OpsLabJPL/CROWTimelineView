@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct DayAxisHeader: View {
+    @EnvironmentObject var time: Time
     @Bindable var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
     let maxWidthDay = 50.0
@@ -16,8 +17,8 @@ struct DayAxisHeader: View {
         Canvas { context, size in
             let viewXMin = 8.0
             let viewXMax = viewModel.viewportWidth
-            var dayStart = Time.shared.calendar.startOfDay(for: viewModel.earliestTime)
-            guard var nextDayStart = Time.shared.calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+            var dayStart = time.calendar.startOfDay(for: viewModel.earliestTime)
+            guard var nextDayStart = time.calendar.date(byAdding: .day, value: 1, to: dayStart) else {
                 return
             }
             let dayWidth = viewModel.convertDurationToWidth * 86400
@@ -53,7 +54,7 @@ struct DayAxisHeader: View {
                     }
                 }
                 dayStart = nextDayStart
-                if let nextNextDayStart = Time.shared.calendar.date(byAdding: .day, value: numDays, to: nextDayStart) {
+                if let nextNextDayStart = time.calendar.date(byAdding: .day, value: numDays, to: nextDayStart) {
                     nextDayStart = nextNextDayStart
                 } else {
                     break

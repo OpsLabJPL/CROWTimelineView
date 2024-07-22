@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct HourAxisHeader: View {
+    @EnvironmentObject var time: Time
     @Bindable var viewModel: TimelineViewModel
     @Binding var scrollOffset: CGPoint
     let maxWidthHour = 15.0
@@ -16,7 +17,7 @@ struct HourAxisHeader: View {
         Canvas { context, size in
             let viewXMin = 0.0
             let viewXMax = viewModel.viewportWidth
-            var hourStart = Time.shared.calendar.startOfDay(for: viewModel.earliestTime)
+            var hourStart = time.calendar.startOfDay(for: viewModel.earliestTime)
             let numHours = (viewModel.convertDurationToWidth * 3600) > maxWidthHour ? 1 : 8
             let displayHourTextLabel = (viewModel.convertDurationToWidth * 28800) >= maxWidthHour
 
@@ -41,7 +42,7 @@ struct HourAxisHeader: View {
                     }
                 }
 
-                if let nextHourStart = Time.shared.calendar.date(byAdding: .hour, value: numHours, to: hourStart) {
+                if let nextHourStart = time.calendar.date(byAdding: .hour, value: numHours, to: hourStart) {
                     hourStart = nextHourStart
                 } else {
                     break

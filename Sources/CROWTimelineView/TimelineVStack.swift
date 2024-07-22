@@ -238,4 +238,5 @@ public struct TimelineVStack: View {
         timeSelection: timeSelection,
         selectedTimelineEvent: .constant(nil)
     )
+    .environmentObject(Time.shared)
 }

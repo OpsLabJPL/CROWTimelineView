@@ -20,7 +20,7 @@ public struct TimelineVStack: View {
     @State private var navigateToDate = Date.now
     @State private var showDatePicker = false
     static let timerInterval: Double = 1.0
-    let timer = Timer.publish(every: timerInterval, on: .main, in: .common).autoconnect()
+    @State private var timer = Timer.publish(every: timerInterval, on: .main, in: .common).autoconnect()
     @State private var scrollTo: Double?
     @State private var didScrollAfterZoomGesture = false
     let timelineViewId = 55555
@@ -80,6 +80,13 @@ public struct TimelineVStack: View {
                 if setInitialZoom {
                     scaleToFitWidth()
                     viewModel.setInitialZoom = false
+                }
+            }
+            .onAppear {
+                // on Mac the viewportWidth can become 0 after switching projects.
+                // if that happens, this will set the width and draw the view.
+                if viewModel.viewportWidth == 0 {
+                    viewModel.viewportWidth = geom.size.width
                 }
             }
         }

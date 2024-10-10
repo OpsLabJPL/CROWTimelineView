@@ -211,7 +211,7 @@ public struct TimelineVStack: View {
     
     func updateScrollOffset(_ offset: CGPoint) {
         viewModel.scrollOffset = offset
-        logger.debug("scrollOffset \(offset.x) width: \(viewModel.timelineWidth)")
+//        logger.debug("scrollOffset \(offset.x) width: \(viewModel.timelineWidth)")
     }
 
     @MainActor func scaleToFitWidth() {

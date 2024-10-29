@@ -43,9 +43,6 @@ public struct TimelineVStack: View {
                     viewModel.viewportWidth = newSize.width
                 }
             }
-//            .onChange(of: viewModel.scrollOffsetAfterZoom) { _, newScrollOffset in
-//                scrollTo = newScrollOffset
-//            }
             .onChange(of: viewModel.setInitialZoom) { _, setInitialZoom in
                 if setInitialZoom {
                     scaleToFitWidth()

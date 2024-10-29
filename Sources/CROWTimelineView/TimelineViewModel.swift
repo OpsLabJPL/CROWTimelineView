@@ -34,9 +34,11 @@ public class TimelineViewModel {
             self.earliestTime = earliest
             self.latestTime = latest
             Task { @MainActor in
+                try await Task.sleep(nanoseconds: 100_000_000)
                 let convertDurationToWidth = viewScale / 3600.0
                 timelineWidth = timespan * convertDurationToWidth
                 viewXform = ViewportTransform(convertDurationToWidth: convertDurationToWidth, scrollTo: nil)
+                setTimelineZoom(initialZoom())
             }
         }
     }
@@ -109,7 +111,6 @@ public class TimelineViewModel {
             scrollTo: newOffset
         )
     }
-
 
     @MainActor public func zoomSafely(by scaleMultiplier: Double) {
         if scaleMultiplier > 1 {

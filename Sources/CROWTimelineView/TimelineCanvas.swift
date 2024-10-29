@@ -5,10 +5,10 @@ import SwiftUI
 
 public struct TimelineCanvas: View {
     // collection of all events on this canvas
-    @Binding public var timeline: TimelineEvents
+    public let timeline: TimelineEvents
 
     // earliest time globally for all canvases on this timeline
-    @Binding public var earliestTime: Date
+    public let earliestTime: Date
 
     // position of the ScrollView offset from the origin. X is horizontal, 0 is the left edge
     @Binding public var scrollOffset: CGPoint
@@ -17,7 +17,7 @@ public struct TimelineCanvas: View {
     @Binding public var selectedEvent: TimelineEvent?
 
     // points over hours
-    @Binding var convertDurationToWidth: Double
+    public let convertDurationToWidth: Double
 
     // rectangular bounds of event in time
     @State private var eventBarTimeRects: [EventTimeRect] = []
@@ -29,7 +29,7 @@ public struct TimelineCanvas: View {
     let barHeight = 20.0
 
     // width of the ScrollView viewport area over which the canvases are drawn
-    @Binding public var viewportWidth: Double
+    public let viewportWidth: Double
 
     public var body: some View {
         ZStack {
@@ -265,19 +265,19 @@ public struct TimelineCanvas: View {
     }
 
     public init(
-        timeline: Binding<TimelineEvents>,
-        earliestTime: Binding<Date>,
+        timeline: TimelineEvents,
+        earliestTime: Date,
         scrollOffset: Binding<CGPoint>,
         selectedEvent: Binding<TimelineEvent?>,
-        convertDurationToWidth: Binding<Double>,
-        viewportWidth: Binding<Double>
+        convertDurationToWidth: Double,
+        viewportWidth: Double
     ) {
-        _timeline = Binding(projectedValue: timeline)
-        _earliestTime = Binding(projectedValue: earliestTime)
+        self.timeline = timeline
+        self.earliestTime = earliestTime
         _scrollOffset = Binding(projectedValue: scrollOffset)
         _selectedEvent = Binding(projectedValue: selectedEvent)
-        _convertDurationToWidth = Binding(projectedValue: convertDurationToWidth)
-        _viewportWidth = Binding(projectedValue: viewportWidth)
+        self.convertDurationToWidth = convertDurationToWidth
+        self.viewportWidth = viewportWidth
     }
 }
 
@@ -307,23 +307,23 @@ struct EventTimeRect {
             Color.blue.opacity(0.2)
             
             TimelineCanvas(
-                timeline: .constant(TimelineEvents.previewEvents()),
-                earliestTime: .constant(earliestTime),
+                timeline: TimelineEvents.previewEvents(),
+                earliestTime: earliestTime,
                 scrollOffset: .constant(CGPoint(x: 0, y: 0)),
                 selectedEvent: .constant(nil),
-                convertDurationToWidth: .constant(0.02),
-                viewportWidth: .constant(320.0)
+                convertDurationToWidth: 0.02,
+                viewportWidth: 320.0
             )
 
             Color.blue.opacity(0.2).frame(height: 16)
 
             TimelineCanvas(
-                timeline: .constant(TimelineEvents.morePreviewEvents()),
-                earliestTime: .constant(earliestTime),
+                timeline: TimelineEvents.morePreviewEvents(),
+                earliestTime: earliestTime,
                 scrollOffset: .constant(CGPoint(x: 0, y: 0)),
                 selectedEvent: .constant(nil),
-                convertDurationToWidth: .constant(0.02),
-                viewportWidth: .constant(320.0)
+                convertDurationToWidth: 0.02,
+                viewportWidth: 320.0
             )
 
             Color.blue.opacity(0.2)

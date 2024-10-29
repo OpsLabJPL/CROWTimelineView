@@ -12,17 +12,12 @@ public struct TimelineVStack: View {
     @Bindable var viewModel: TimelineViewModel
     @Bindable var timeSelection: TimeSelection
     @State private var simNow = Time.shared.getSimulatedTime(for: Date.now)
-    @State private var scaleWhenMagnifyBegins: CGFloat?
-    @State var gestureOffset = 0.0
-    @State private var convertDurationToWidthWhenMagnifyBegan: Double
     @State var selectedTime: Date?
     @Binding var selectedTimelineEvent: TimelineEvent?
     @State private var navigateToDate = Date.now
     @State private var showDatePicker = false
     static let timerInterval: Double = 1.0
     @State private var timer = Timer.publish(every: timerInterval, on: .main, in: .common).autoconnect()
-    @State private var scrollTo: Double?
-    @State private var didScrollAfterZoomGesture = false
     let timelineViewId = 55555
     let logger = Logger(subsystem: "TimelineView", category: "navigation")
 
@@ -33,7 +28,7 @@ public struct TimelineVStack: View {
                 headerRibbons()
                     .onTapGesture { location in
                         let cursorOrigin = location.x - viewModel.scrollOffset.x
-                        let timeOffset = cursorOrigin / viewModel.convertDurationToWidth
+                        let timeOffset = cursorOrigin / viewModel.viewXform.convertDurationToWidth
                         selectedTime = viewModel.earliestTime.addingTimeInterval(timeOffset)
                         timeSelection.selectedTime = selectedTime
                     }
@@ -43,39 +38,14 @@ public struct TimelineVStack: View {
 
             // display ScrollView offset position and width for debugging and performance analysis
             // .navigationTitle("offset: \(Int(viewModel.scrollOffset.x)) w: \(Int(viewModel.timelineWidth))")
-            .gesture(
-                MagnifyGesture()
-                    .onChanged { value in
-                        Task { @MainActor in
-                            logger.info("changing zoom by \(value.magnification)")
-                            if didScrollAfterZoomGesture {
-                                didScrollAfterZoomGesture = false
-                                setPinchZoom(value)
-                            }
-                        }
-                    }
-                    .onEnded { value in
-                        Task { @MainActor in
-                            logger.info("ending zoom on \(value.magnification)")
-                            if didScrollAfterZoomGesture {
-                                didScrollAfterZoomGesture = false
-                                setPinchZoom(value)
-                            }
-                            Task { @MainActor in
-                                scaleWhenMagnifyBegins = nil
-                            }
-                        }
-                    }
-            )
             .onChange(of: geom.size) { _, newSize in
                 Task { @MainActor in
                     viewModel.viewportWidth = newSize.width
                 }
             }
-            .onChange(of: viewModel.scrollOffsetAfterZoom) { _, newScrollOffset in
-                scrollTo = newScrollOffset
-                didScrollAfterZoomGesture = true
-            }
+//            .onChange(of: viewModel.scrollOffsetAfterZoom) { _, newScrollOffset in
+//                scrollTo = newScrollOffset
+//            }
             .onChange(of: viewModel.setInitialZoom) { _, setInitialZoom in
                 if setInitialZoom {
                     scaleToFitWidth()
@@ -89,15 +59,6 @@ public struct TimelineVStack: View {
                     viewModel.viewportWidth = geom.size.width
                 }
             }
-        }
-    }
-
-    @MainActor func setPinchZoom(_ value: MagnifyGesture.Value) {
-        if let scaleWhenMagnifyBegins {
-            viewModel.setTimelineZoom(scaleWhenMagnifyBegins * value.magnification)
-        } else {
-            scaleWhenMagnifyBegins = viewModel.viewScale
-            viewModel.setTimelineZoom(viewModel.viewScale * value.magnification)
         }
     }
 
@@ -144,18 +105,21 @@ public struct TimelineVStack: View {
             simNow = Time.shared.getSimulatedTime(for: Date.now)
             if viewModel.autoScrollToNow {
                 let durationUntilNow = simNow.timeIntervalSince(viewModel.earliestTime)
-                let newScrollTo = durationUntilNow * viewModel.convertDurationToWidth - viewModel.viewportWidth * 0.5
-                if scrollTo == newScrollTo {
-                    scrollTo = nil // in case the next scrollTo value is the same as the previous one, force an update
-                }
-                scrollTo = newScrollTo
+                let newScrollTo = durationUntilNow * viewModel.viewXform.convertDurationToWidth - viewModel.viewportWidth * 0.5
+                viewModel.viewXform = ViewportTransform(
+                    convertDurationToWidth: viewModel.viewXform.convertDurationToWidth,
+                    scrollTo: newScrollTo
+                )
             }
         }
         .onChange(of: viewModel.goToDate) { _, newDate in
             if let newDate {
                 let timeDelta = newDate.timeIntervalSince(viewModel.earliestTime)
-                let scrollOffset = timeDelta * viewModel.convertDurationToWidth - viewModel.viewportWidth * 0.5
-                scrollTo = scrollOffset
+                let scrollOffset = timeDelta * viewModel.viewXform.convertDurationToWidth - viewModel.viewportWidth * 0.5
+                viewModel.viewXform = ViewportTransform(
+                    convertDurationToWidth: viewModel.viewXform.convertDurationToWidth,
+                    scrollTo: scrollOffset
+                )
                 viewModel.goToDate = nil
             }
         }
@@ -164,7 +128,7 @@ public struct TimelineVStack: View {
     @ViewBuilder func timelineChartStack(_ scrollProxy: ScrollViewProxy) -> some View {
         ZStack {
             VStack(alignment: .leading) {
-                ForEach($viewModel.timelines) { $timeline in
+                ForEach(viewModel.timelines) { timeline in
                     VStack(alignment: .leading) {
                         HStack {
                             Button {
@@ -180,12 +144,12 @@ public struct TimelineVStack: View {
                         .systemBackgroundSectionHeader()
                         .offset(x: -viewModel.scrollOffset.x)
                         TimelineCanvas(
-                            timeline: $timeline,
-                            earliestTime: $viewModel.earliestTime,
+                            timeline: timeline,
+                            earliestTime: viewModel.earliestTime,
                             scrollOffset: $viewModel.scrollOffset,
                             selectedEvent: $selectedTimelineEvent,
-                            convertDurationToWidth: $viewModel.convertDurationToWidth,
-                            viewportWidth: $viewModel.viewportWidth
+                            convertDurationToWidth: viewModel.viewXform.convertDurationToWidth,
+                            viewportWidth: viewModel.viewportWidth
                         )
                         .systemBackground()
                     }
@@ -197,13 +161,13 @@ public struct TimelineVStack: View {
             let timelineWidth = viewModel.timelineWidth > 0 ? viewModel.timelineWidth : 0
             Color.clear.frame(width: timelineWidth)
                 .id(timelineViewId)
-                .onChange(of: scrollTo) { _, newScrollTo in
-                    if let offset = newScrollTo {
+                .onChange(of: viewModel.viewXform) { _, newViewXform in
+                    if let offset = newViewXform.scrollTo {
                         // the normalized scroll offset is used by UnitPoint to scroll the viewport where we ask it to go in view coordinates
                         // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
                         let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
-                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
-                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0))
+                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0)) // TODO set y
+                        viewModel.scrollOffset = CGPoint(x: offset, y: 0)
                     }
                 }
         }
@@ -231,12 +195,11 @@ public struct TimelineVStack: View {
         _viewModel = Bindable(viewModel)
         _timeSelection = Bindable(timeSelection)
         _selectedTimelineEvent = Binding(projectedValue: selectedTimelineEvent)
-        _convertDurationToWidthWhenMagnifyBegan = State(wrappedValue: viewModel.convertDurationToWidth)
     }
 }
 
 #Preview {
-    @State var timeSelection = TimeSelection()
+    @Previewable @State var timeSelection = TimeSelection()
     let viewModel = TimelineViewModel(
         timelines: [ TimelineEvents.previewEvents() , TimelineEvents.morePreviewEvents() ]
     )

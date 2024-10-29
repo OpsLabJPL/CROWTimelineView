@@ -21,17 +21,17 @@ struct DayAxisHeader: View {
             guard var nextDayStart = time.calendar.date(byAdding: .day, value: 1, to: dayStart) else {
                 return
             }
-            let dayWidth = viewModel.convertDurationToWidth * 86400
+            let dayWidth = viewModel.viewXform.convertDurationToWidth * 86400
             let numDays = dayWidth > maxWidthDay ? 1 : 7
             let width = dayWidth * Double(numDays)
             let formatter = width >= 100.0 ? Time.shared.dayMonth3Year2Formatter : Time.shared.dayFormatter
             repeat {
                 if dayStart >= viewModel.earliestTime {
                     let dayText = formatter.string(from: dayStart)
-                    var leadingOffset = viewModel.convertDurationToWidth * (
+                    var leadingOffset = viewModel.viewXform.convertDurationToWidth * (
                         dayStart.timeIntervalSince(viewModel.earliestTime)
                     ) + scrollOffset.x
-                    let trailingOffset = viewModel.convertDurationToWidth * (
+                    let trailingOffset = viewModel.viewXform.convertDurationToWidth * (
                         nextDayStart.timeIntervalSince(viewModel.earliestTime)
                     ) + scrollOffset.x
                     if !(trailingOffset < viewXMin || leadingOffset > viewXMax) {

@@ -18,13 +18,13 @@ struct HourAxisHeader: View {
             let viewXMin = 0.0
             let viewXMax = viewModel.viewportWidth
             var hourStart = time.calendar.startOfDay(for: viewModel.earliestTime)
-            let numHours = (viewModel.convertDurationToWidth * 3600) > maxWidthHour ? 1 : 8
-            let displayHourTextLabel = (viewModel.convertDurationToWidth * 28800) >= maxWidthHour
+            let numHours = (viewModel.viewXform.convertDurationToWidth * 3600) > maxWidthHour ? 1 : 8
+            let displayHourTextLabel = (viewModel.viewXform.convertDurationToWidth * 28800) >= maxWidthHour
 
             repeat {
                 if hourStart >= viewModel.earliestTime {
                     let hourText = Time.shared.hourFormatter.string(from: hourStart)
-                    let xOffset = viewModel.convertDurationToWidth * (
+                    let xOffset = viewModel.viewXform.convertDurationToWidth * (
                         hourStart.timeIntervalSince(viewModel.earliestTime)
                     ) + scrollOffset.x
                     if xOffset < viewXMax && xOffset > viewXMin {

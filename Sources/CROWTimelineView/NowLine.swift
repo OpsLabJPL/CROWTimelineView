@@ -19,7 +19,7 @@ struct NowLine: View {
                 viewModel.earliestTime.timeIntervalSinceReferenceDate
             )
             let xform = CGAffineTransform(translationX: scrollOffset.x, y: 0.0)
-                .scaledBy(x: viewModel.convertDurationToWidth, y: 1.0)
+                .scaledBy(x: viewModel.viewXform.convertDurationToWidth, y: 1.0)
             let origin = CGPoint(x: originX, y: 0)
             let viewLineOrigin = origin.applying(xform)
             var path = Path()

@@ -8,6 +8,19 @@
 import Foundation
 import Combine
 
+public struct ViewportTransform: Equatable {
+    // points over hours
+    public var convertDurationToWidth: Double
+
+    // set to invoke a change in scroll position
+    public var scrollTo: Double?
+
+    static public func == (lhs: ViewportTransform, rhs: ViewportTransform) -> Bool {
+        lhs.convertDurationToWidth == rhs.convertDurationToWidth
+        && lhs.scrollTo == rhs.scrollTo
+    }
+}
+
 @Observable
 public class TimelineViewModel {
     public var timelines: [TimelineEvents] = [] {
@@ -20,9 +33,15 @@ public class TimelineViewModel {
             }
             self.earliestTime = earliest
             self.latestTime = latest
-            self.recomputeTimelineWidthForScale()
+            Task { @MainActor in
+                let convertDurationToWidth = viewScale / 3600.0
+                timelineWidth = timespan * convertDurationToWidth
+                viewXform = ViewportTransform(convertDurationToWidth: convertDurationToWidth, scrollTo: nil)
+            }
         }
     }
+
+    public var viewXform: ViewportTransform
 
     // horizontal width of the viewport in points
     public var viewportWidth: Double = 0.0
@@ -35,9 +54,6 @@ public class TimelineViewModel {
 
     // horizontal width of the drawable timeline in points
     private(set) var timelineWidth = 0.0
-
-    // points over hours
-    public var convertDurationToWidth = 1.0
 
     // earliest time in the event data
     public var earliestTime: Date = .now
@@ -73,30 +89,27 @@ public class TimelineViewModel {
     ) {
         self.timelines = timelines
         self.timelineWidth = timelineWidth
-        self.convertDurationToWidth = convertDurationToWidth
+        self.viewXform = ViewportTransform(
+            convertDurationToWidth: convertDurationToWidth,
+            scrollTo: nil
+        )
         self.earliestTime = earliestTime
         self.latestTime = latestTime
     }
 
     @MainActor public func setTimelineZoom(_ zoom: Double) {
         let viewXPointOffset = -scrollOffset.x + viewportWidth * 0.5
-        viewCenterTimeDeltaBeforeZoom = viewXPointOffset / convertDurationToWidth
+        viewCenterTimeDeltaBeforeZoom = viewXPointOffset / viewXform.convertDurationToWidth
         viewScale = min(maxZoom(), max(minZoom(), abs(zoom)))
-        recomputeTimelineWidthForScale()
-        let newOffset = viewCenterTimeDeltaBeforeZoom * convertDurationToWidth - viewportWidth * 0.5
-
-        // force an update even if the newOffset is the same as the current scrollOffset
-        if scrollOffsetAfterZoom == newOffset {
-            scrollOffsetAfterZoom = newOffset - 0.000001
-        } else {
-            scrollOffsetAfterZoom = newOffset
-        }
+        viewXform.convertDurationToWidth = viewScale / 3600.0
+        timelineWidth = timespan * viewXform.convertDurationToWidth
+        let newOffset = viewCenterTimeDeltaBeforeZoom * viewXform.convertDurationToWidth - viewportWidth * 0.5
+        viewXform = ViewportTransform(
+            convertDurationToWidth: viewXform.convertDurationToWidth,
+            scrollTo: newOffset
+        )
     }
 
-    public func recomputeTimelineWidthForScale() {
-        convertDurationToWidth = viewScale / 3600.0
-        timelineWidth = timespan * convertDurationToWidth
-    }
 
     @MainActor public func zoomSafely(by scaleMultiplier: Double) {
         if scaleMultiplier > 1 {

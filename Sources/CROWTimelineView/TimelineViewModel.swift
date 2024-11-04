@@ -33,11 +33,10 @@ public class TimelineViewModel {
             }
             self.earliestTime = earliest
             self.latestTime = latest
+            let convertDurationToWidth = viewScale / 3600.0
+            timelineWidth = timespan * convertDurationToWidth
+            viewXform = ViewportTransform(convertDurationToWidth: convertDurationToWidth, scrollTo: nil)
             Task { @MainActor in
-                try await Task.sleep(nanoseconds: 100_000_000)
-                let convertDurationToWidth = viewScale / 3600.0
-                timelineWidth = timespan * convertDurationToWidth
-                viewXform = ViewportTransform(convertDurationToWidth: convertDurationToWidth, scrollTo: nil)
                 setTimelineZoom(initialZoom())
             }
         }
@@ -141,7 +140,8 @@ public class TimelineViewModel {
 
     // minimum zoom is 2 weeks to span the viewport width, or the data timespan if it is less than 2 weeks
     public func minZoom() -> Double {
-        return min(viewportWidth / twoWeeksInSeconds * 3600.0, initialZoom())
+        let delta = min(latestTime.timeIntervalSince(earliestTime), twoWeeksInSeconds)
+        return min(viewportWidth / delta * 3600.0, initialZoom())
     }
 
     public func minOffset() -> Double {

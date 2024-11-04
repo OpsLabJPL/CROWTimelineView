@@ -48,6 +48,10 @@ public class TimelineViewModel {
     // horizontal width of the viewport in points
     public var viewportWidth: Double = 0.0
 
+    public var contentSize = CGSize(width: 1.0, height: 1.0)
+
+    public var viewportSize = CGSize(width: 1.0, height: 1.0)
+
     // offset of the ScrollView containing the timelines
     public var scrollOffset: CGPoint = .zero
 
@@ -77,6 +81,8 @@ public class TimelineViewModel {
 
     // the new ScrollView offset position after the user zooms the timeline
     public var scrollOffsetAfterZoom = 0.0
+
+    public var scrollYOffset: CGFloat = 0.0
 
     let twoWeeksInSeconds = 86400.0 * 14
     let thirtyMinutesInSeconds = 1800.0

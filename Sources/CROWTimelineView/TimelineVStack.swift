@@ -84,9 +84,59 @@ public struct TimelineVStack: View {
         // stack of event charts
         ZStack {
             ScrollViewReader { scrollProxy in
-                ScrollViewWithOffsetTracking([.horizontal, .vertical], showsIndicators: true, onScroll: updateScrollOffset) {
-                    timelineChartStack(scrollProxy)
+#if os(iOS)
+                if #available(iOS 18, *) {
+                    ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                        timelineChartStack(scrollProxy)
+                    }
+                    .onScrollGeometryChange(for: CGPoint.self) { geom in
+                        geom.contentOffset
+                    } action: { _, offset in
+                        print("offset y: \(offset.y)")
+                        viewModel.scrollOffset = CGPoint(x: -offset.x, y: offset.y)
+                    }
+                    .onScrollGeometryChange(for: CGSize.self) { geom in
+                        geom.contentSize
+                    } action: { _, size in
+                        viewModel.contentSize = size
+                    }
+                    .onScrollGeometryChange(for: CGSize.self) { geom in
+                        geom.containerSize
+                    } action: { _, size in
+                        viewModel.viewportSize = size
+                    }
+                } else {
+                    ScrollViewWithOffsetTracking([.horizontal, .vertical], showsIndicators: true, onScroll: updateScrollOffset) {
+                        timelineChartStack(scrollProxy)
+                    }
                 }
+#elseif os(macOS)
+                if #available(macOS 15, *) {
+                    ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                        timelineChartStack(scrollProxy)
+                    }
+                    .onScrollGeometryChange(for: CGPoint.self) { geom in
+                        geom.contentOffset
+                    } action: { _, offset in
+                        print("offset y: \(offset.y)")
+                        viewModel.scrollOffset = CGPoint(x: -offset.x, y: offset.y)
+                    }
+                    .onScrollGeometryChange(for: CGSize.self) { geom in
+                        geom.contentSize
+                    } action: { _, size in
+                        viewModel.contentSize = size
+                    }
+                    .onScrollGeometryChange(for: CGSize.self) { geom in
+                        geom.containerSize
+                    } action: { _, size in
+                        viewModel.viewportSize = size
+                    }
+                } else {
+                    ScrollViewWithOffsetTracking([.horizontal, .vertical], showsIndicators: true, onScroll: updateScrollOffset) {
+                        timelineChartStack(scrollProxy)
+                    }
+                }
+#endif
             }
 
             NowLine(viewModel: viewModel, scrollOffset: $viewModel.scrollOffset, simNow: $simNow)
@@ -163,8 +213,11 @@ public struct TimelineVStack: View {
                         // the normalized scroll offset is used by UnitPoint to scroll the viewport where we ask it to go in view coordinates
                         // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
                         let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
-                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: 0.0)) // TODO set y
-                        viewModel.scrollOffset = CGPoint(x: offset, y: 0)
+                        let unitPointYOffset = viewModel.scrollOffset.y / (viewModel.contentSize.height - viewModel.viewportSize.height)
+                        print("contentSizeHeight \(viewModel.contentSize.height)")
+                        print("unitPointYOffset \(unitPointYOffset)")
+                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: unitPointYOffset))
+                        viewModel.scrollOffset.x = offset
                     }
                 }
         }

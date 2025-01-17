@@ -44,7 +44,7 @@ public struct TimelineCanvas: View {
                 let locationPlusOffset = location.applying(moveToOffset)
                 for index in eventBarViewRects.indices where eventBarViewRects[index].rect.contains(locationPlusOffset) {
                     let event = timeline.events[eventBarViewRects[index].eventIndex]
-                    print(event.name)
+//                    print(event.name)
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedEvent = selectedEvent == event ? nil : event
                         // scroll imperceptibly to force a redraw for selection feedback

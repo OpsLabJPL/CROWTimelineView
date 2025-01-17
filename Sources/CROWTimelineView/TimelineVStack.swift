@@ -92,7 +92,7 @@ public struct TimelineVStack: View {
                     .onScrollGeometryChange(for: CGPoint.self) { geom in
                         geom.contentOffset
                     } action: { _, offset in
-                        print("offset y: \(offset.y)")
+//                        print("offset y: \(offset.y)")
                         viewModel.scrollOffset = CGPoint(x: -offset.x, y: offset.y)
                     }
                     .onScrollGeometryChange(for: CGSize.self) { geom in
@@ -118,7 +118,7 @@ public struct TimelineVStack: View {
                     .onScrollGeometryChange(for: CGPoint.self) { geom in
                         geom.contentOffset
                     } action: { _, offset in
-                        print("offset y: \(offset.y)")
+//                        print("offset y: \(offset.y)")
                         viewModel.scrollOffset = CGPoint(x: -offset.x, y: offset.y)
                     }
                     .onScrollGeometryChange(for: CGSize.self) { geom in
@@ -153,6 +153,7 @@ public struct TimelineVStack: View {
             if viewModel.autoScrollToNow {
                 let durationUntilNow = simNow.timeIntervalSince(viewModel.earliestTime)
                 let newScrollTo = durationUntilNow * viewModel.viewXform.convertDurationToWidth - viewModel.viewportWidth * 0.5
+//                print("newScrollTo \(newScrollTo), durationToWidth: \(viewModel.viewXform.convertDurationToWidth)")
                 viewModel.viewXform = ViewportTransform(
                     convertDurationToWidth: viewModel.viewXform.convertDurationToWidth,
                     scrollTo: newScrollTo
@@ -214,9 +215,13 @@ public struct TimelineVStack: View {
                         // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
                         let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
                         let unitPointYOffset = viewModel.scrollOffset.y / (viewModel.contentSize.height - viewModel.viewportSize.height)
-                        print("contentSizeHeight \(viewModel.contentSize.height)")
-                        print("unitPointYOffset \(unitPointYOffset)")
-                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint ( x: unitPointXOffset, y: unitPointYOffset))
+//                        print("contentSizeHeight \(viewModel.contentSize.height)")
+//                        print("unitPointXOffset \(unitPointXOffset)")
+//                        print("unitPointYOffset \(unitPointYOffset)")
+                        scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint (
+                            x: unitPointXOffset,
+                            y: unitPointYOffset)
+                        )
                         viewModel.scrollOffset.x = offset
                     }
                 }

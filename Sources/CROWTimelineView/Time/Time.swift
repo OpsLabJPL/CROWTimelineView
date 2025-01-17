@@ -23,6 +23,12 @@ public class Time: ObservableObject {
         }
     }
 
+    public let iso8601: ISO8601DateFormatter = {
+        let iso = ISO8601DateFormatter()
+        iso.timeZone = TimeZone(abbreviation: "UTC")
+        return iso
+    }()
+    
     public let durationFormat: DateFormatter = {
         let format = DateFormatter()
         format.dateFormat = "hh'h'mm'm'ss's'"
@@ -149,6 +155,9 @@ public class Time: ObservableObject {
         }
         if let iso8601MillisDate = Time.shared.utcYMDmsDateFormatter.date(from: dateString) {
             return iso8601MillisDate
+        }
+        if let iso8601Date = Time.shared.iso8601.date(from: dateString) {
+            return iso8601Date
         }
         return nil
     }

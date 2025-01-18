@@ -218,7 +218,7 @@ public struct TimelineVStack: View {
                             x: unitPointXOffset,
                             y: unitPointYOffset)
                         )
-                        viewModel.scrollOffset.x = offset
+                        viewModel.scrollOffset.x = -offset
                     }
                 }
         }

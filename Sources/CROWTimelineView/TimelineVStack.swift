@@ -61,7 +61,7 @@ public struct TimelineVStack: View {
 
     @ViewBuilder func headerRibbons() -> some View {
         Group {
-            DayAxisHeader(viewModel, scrollOffset: $viewModel.scrollOffset)
+            DayAxisHeader(viewModel)
                 .background(Color.cyan.opacity(0.5))
                 .frame(height: 15)
                 .clipped()
@@ -69,7 +69,7 @@ public struct TimelineVStack: View {
                     selectedTime = nil
                     timeSelection.selectedTime = nil
                 }
-            HourAxisHeader(viewModel, scrollOffset: $viewModel.scrollOffset)
+            HourAxisHeader(viewModel)
                 .background(Color.cyan.opacity(0.5))
                 .frame(height: 15)
                 .clipped()
@@ -118,7 +118,6 @@ public struct TimelineVStack: View {
                     .onScrollGeometryChange(for: CGPoint.self) { geom in
                         geom.contentOffset
                     } action: { _, offset in
-//                        print("offset y: \(offset.y)")
                         viewModel.scrollOffset = CGPoint(x: -offset.x, y: offset.y)
                     }
                     .onScrollGeometryChange(for: CGSize.self) { geom in
@@ -139,11 +138,11 @@ public struct TimelineVStack: View {
 #endif
             }
 
-            NowLine(viewModel: viewModel, scrollOffset: $viewModel.scrollOffset, simNow: $simNow)
+            NowLine(viewModel: viewModel, simNow: $simNow)
                 .allowsHitTesting(false)
                 .frame(maxHeight: .infinity)
 
-            CursorLine(viewModel: viewModel, scrollOffset: $viewModel.scrollOffset, selectedTime: $selectedTime)
+            CursorLine(viewModel: viewModel, selectedTime: $selectedTime)
                 .allowsHitTesting(false)
                 .frame(maxHeight: .infinity)
         }
@@ -215,9 +214,6 @@ public struct TimelineVStack: View {
                         // viewModel.timelineWidth is the denominator for normalization: the full width of the timeline at its current scale
                         let unitPointXOffset = offset / (viewModel.timelineWidth - viewModel.viewportWidth)
                         let unitPointYOffset = viewModel.scrollOffset.y / (viewModel.contentSize.height - viewModel.viewportSize.height)
-//                        print("contentSizeHeight \(viewModel.contentSize.height)")
-//                        print("unitPointXOffset \(unitPointXOffset)")
-//                        print("unitPointYOffset \(unitPointYOffset)")
                         scrollProxy.scrollTo(timelineViewId, anchor: UnitPoint (
                             x: unitPointXOffset,
                             y: unitPointYOffset)
@@ -230,7 +226,6 @@ public struct TimelineVStack: View {
     
     func updateScrollOffset(_ offset: CGPoint) {
         viewModel.scrollOffset = offset
-//        logger.debug("scrollOffset \(offset.x) width: \(viewModel.timelineWidth)")
     }
 
     @MainActor func scaleToFitWidth() {

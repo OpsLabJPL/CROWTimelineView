@@ -9,7 +9,6 @@ import SwiftUI
 
 struct CursorLine: View {
     @Bindable var viewModel: TimelineViewModel
-    @Binding var scrollOffset: CGPoint
     @Binding var selectedTime: Date?
 
     var body: some View {
@@ -19,7 +18,7 @@ struct CursorLine: View {
                     selectedTime.timeIntervalSinceReferenceDate -
                     viewModel.earliestTime.timeIntervalSinceReferenceDate
                 )
-                let xform = CGAffineTransform(translationX: scrollOffset.x, y: 0.0)
+                let xform = CGAffineTransform(translationX: viewModel.scrollOffset.x, y: 0.0)
                     .scaledBy(x: viewModel.viewXform.convertDurationToWidth, y: 1.0)
                 let origin = CGPoint(x: originX, y: 0)
                 let viewLineOrigin = origin.applying(xform)

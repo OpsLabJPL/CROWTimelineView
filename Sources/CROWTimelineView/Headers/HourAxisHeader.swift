@@ -10,7 +10,6 @@ import SwiftUI
 struct HourAxisHeader: View {
     @EnvironmentObject var time: Time
     @Bindable var viewModel: TimelineViewModel
-    @Binding var scrollOffset: CGPoint
     let maxWidthHour = 15.0
 
     var body: some View {
@@ -26,7 +25,7 @@ struct HourAxisHeader: View {
                     let hourText = Time.shared.hourFormatter.string(from: hourStart)
                     let xOffset = viewModel.viewXform.convertDurationToWidth * (
                         hourStart.timeIntervalSince(viewModel.earliestTime)
-                    ) + scrollOffset.x
+                    ) + viewModel.scrollOffset.x
                     if xOffset < viewXMax && xOffset > viewXMin {
                         var path = Path()
                         path.move(to: CGPoint(x: xOffset, y: 0))
@@ -51,8 +50,7 @@ struct HourAxisHeader: View {
         }
     }
 
-    init(_ viewModel: TimelineViewModel, scrollOffset: Binding<CGPoint>) {
+    init(_ viewModel: TimelineViewModel) {
         _viewModel = Bindable(viewModel)
-        _scrollOffset = Binding(projectedValue: scrollOffset)
     }
 }

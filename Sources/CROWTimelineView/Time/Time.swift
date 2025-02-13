@@ -130,11 +130,12 @@ public class Time: ObservableObject {
 
     public func formatSimulatedTime(_ targetDate: Date) -> String {
         let simulatedTime = getSimulatedTime(for: targetDate)
-        return utcDoyFormat.string(from: simulatedTime) + " \(Time.shared.selectedTimeZone.rawValue)"
+        return utcDoyFormat.string(from: simulatedTime) + " UTC"
     }
 
     public func formatRealTime(for date: Date) -> String {
-        return utcDoyFormat.string(from: date) + " \(Time.shared.selectedTimeZone.rawValue)"
+        let timezoneLabel = Time.shared.selectedTimeZone.zone.abbreviation() ?? Time.shared.selectedTimeZone.rawValue
+        return utcDoyFormat.string(from: date) + " \(timezoneLabel)"
     }
 
     // TODO refactor this and remove Realm dependency

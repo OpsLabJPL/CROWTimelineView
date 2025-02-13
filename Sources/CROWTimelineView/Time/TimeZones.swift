@@ -8,7 +8,7 @@
 import Foundation
 
 public enum TimeZones: String, CaseIterable {
-    case utc = "UTC", ist = "IST", pdt = "PDT", local = "Local"
+    case utc = "UTC", ist = "IST", pacific = "Pacific", local = "Local"
 
     public var zone: TimeZone {
         switch self {
@@ -16,8 +16,8 @@ public enum TimeZones: String, CaseIterable {
             return TimeZone(abbreviation: "UTC")!
         case .ist:
             return TimeZone(abbreviation: "IST")!
-        case .pdt:
-            return TimeZone(abbreviation: "PDT")!
+        case .pacific:
+            return TimeZone(identifier: "America/Los_Angeles")!
         case .local:
             return TimeZone.autoupdatingCurrent
         }
@@ -27,7 +27,7 @@ public enum TimeZones: String, CaseIterable {
         switch self {
         case .ist:
             return "🇮🇳"
-        case .pdt:
+        case .pacific:
             return "🇺🇸"
         case .local:
             return "✈️"

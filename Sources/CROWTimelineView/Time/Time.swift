@@ -138,17 +138,13 @@ public class Time: ObservableObject {
         return utcDoyFormat.string(from: date) + " \(timezoneLabel)"
     }
 
-    // TODO refactor this and remove Realm dependency
-//    func setSimulatedTime(_ simTime: SimulatedTime) {
-//        targetSimulationTime = simTime.simulatedTime
-//        targetWallClockTime = simTime.wallClockTime
-//        simulationTimeDelta = targetSimulationTime.timeIntervalSince(targetWallClockTime)
-//    }
-
     public func targetDelta() -> Int { Int(simulationTimeDelta) }
 
     public static func eventDate(_ dateString: String) -> Date? {
         if let doyDate = Time.shared.ravenJsonDateFormatter.date(from: dateString) {
+            return doyDate
+        }
+        if let doyDate = Time.shared.ravenDateFormatter.date(from: dateString) {
             return doyDate
         }
         if let iso8601Date = Time.shared.utcYMDDateFormatter.date(from: dateString) {

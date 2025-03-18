@@ -18,8 +18,6 @@ public struct TimelineEvent: Identifiable, Equatable, Codable {
 
     public var name: String
     public var id: String
-    public var color: String?
-    public var username: String?
     public var duration: Double
     public var startUTC: Date
     public var endUTC: Date {
@@ -28,25 +26,36 @@ public struct TimelineEvent: Identifiable, Equatable, Codable {
     var startTime: Date { startUTC }
     var endTime: Date { endUTC }
     var activityName: String { name }
+    public var color: String?
+    public var metadata: [String: String] = [:]
 
     public init(
         name: String,
         id: String,
-        color: String? = nil,
-        username: String? = nil,
         duration: Double,
-        startUTC: Date
+        startUTC: Date,
+        color: String? = nil,
+        metadata: [String: String] = [:]
     ) {
         self.name = name
         self.id = id
-        self.color = color
-        self.username = username
         self.duration = duration
         self.startUTC = startUTC
+        self.color = color
+        self.metadata = metadata
     }
 
     public static func == (lhs: TimelineEvent, rhs: TimelineEvent) -> Bool {
         lhs.id == rhs.id
+    }
+    
+    public func metadata(for key: String) -> String? {
+        guard let key = metadata.keys.filter(
+            { $0.lowercased() == key.lowercased() }
+        ).first else {
+            return nil
+        }
+        return metadata[key]
     }
 
     static func fillColor(_ colorHex: String?) -> Color {

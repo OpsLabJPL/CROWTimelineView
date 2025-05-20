@@ -20,6 +20,7 @@ public class Time: ObservableObject {
             dayMonth3Year2Formatter.timeZone = selectedTimeZone.zone
             hourFormatter.timeZone = selectedTimeZone.zone
             calendar.timeZone = selectedTimeZone.zone
+            friendlyFormat.timeZone = selectedTimeZone.zone
         }
     }
 
@@ -49,6 +50,15 @@ public class Time: ObservableObject {
         formatter.dateFormat = ""
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-DDD'T'HH:mm:ss"
+        formatter.timeZone = TimeZone(abbreviation: "UTC")
+        return formatter
+    }()
+    
+    public let friendlyFormat: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = ""
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "EEE MMM d yyyy HH:mm"
         formatter.timeZone = TimeZone(abbreviation: "UTC")
         return formatter
     }()

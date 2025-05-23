@@ -108,10 +108,14 @@ public struct TimelineCanvas: View {
                 drawBar(context: context, eventViewRect: eventViewRect)
                 var maxWidth = maxWidthUntilNextEventInRow(index)
                 var originX = eventViewRect.rect.origin.x - scrollOffset.x + 4
-                if originX < 0 {
-                    maxWidth += originX // subtract clipped leading portion of bar width
-                    originX = 4
+                
+                // adjust text horizontal position if the leading bar area is clipped
+                // on the left, instead placing is 4 points from the leading edge
+                if eventViewRect.rect.origin.x < 0 {
+                    maxWidth += eventViewRect.rect.origin.x
+                    originX = -scrollOffset.x + 4
                 }
+                
                 let originY = eventViewRect.rect.origin.y - 1
                 let textRect = CGRect(
                     x: originX,

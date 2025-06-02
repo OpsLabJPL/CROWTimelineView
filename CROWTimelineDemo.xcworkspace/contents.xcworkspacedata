@@ -1,4 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
+   <Group
+      location = "group:CROWTimelineDemo"
+      name = "CROWTimelineDemo">
+      <Group
+         location = "group:CROWTimelineDemo"
+         name = "CROWTimelineDemo">
+         <FileRef
+            location = "group:timelineEvents.json">
+         </FileRef>
+         <FileRef
+            location = "group:CROWTimelineDemoApp.swift">
+         </FileRef>
+         <FileRef
+            location = "group:Assets.xcassets">
+         </FileRef>
+         <FileRef
+            location = "group:SelectedEventSheet.swift">
+         </FileRef>
+         <FileRef
+            location = "group:CROWTimelineDemo.entitlements">
+         </FileRef>
+         <FileRef
+            location = "group:Bundle+JSON.swift">
+         </FileRef>
+         <FileRef
+            location = "group:TimelineEventDetail.swift">
+         </FileRef>
+         <FileRef
+            location = "group:ContentView.swift">
+         </FileRef>
+      </Group>
+      <FileRef
+         location = "group:CROWTimelineDemo.xcodeproj">
+      </FileRef>
+      <Group
+         location = "group:CROWTimelineDemoUITests"
+         name = "CROWTimelineDemoUITests">
+         <FileRef
+            location = "group:CROWTimelineDemoUITestsLaunchTests.swift">
+         </FileRef>
+         <FileRef
+            location = "group:CROWTimelineDemoUITests.swift">
+         </FileRef>
+      </Group>
+      <Group
+         location = "group:CROWTimelineDemoTests"
+         name = "CROWTimelineDemoTests">
+         <FileRef
+            location = "group:CROWTimelineDemoTests.swift">
+         </FileRef>
+      </Group>
+   </Group>
 </Workspace>

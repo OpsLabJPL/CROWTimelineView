@@ -1,0 +1,15 @@
+{
+  "originHash" : "daa8bc28b6c41b91907754bc38a278ad838f0a3edc638c5476e8eba637298c6b",
+  "pins" : [
+    {
+      "identity" : "crowtimelineview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/OpsLabJPL/CROWTimelineView.git",
+      "state" : {
+        "revision" : "c22491864195eb4c6066e1d25bf05741a4cbbb41",
+        "version" : "1.0.5"
+      }
+    }
+  ],
+  "version" : 3
+}
